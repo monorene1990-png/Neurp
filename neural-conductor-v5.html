@@ -1,0 +1,4230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NEURAL CONDUCTOR</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@300;400;600;700&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06040E;
+  --soma:#00CFFF;
+  --relay:#00FF8A;
+  --inh:#C77DFF;
+  --phi:#F5A623;
+  --danger:#FF3A5C;
+  --heat:#FF6B1A;
+  --text:#A8C4DC;
+  --muted:#1A2E44;
+  --border:rgba(0,180,255,0.10);
+  --mono:'JetBrains Mono',monospace;
+  --head:'Rajdhani',sans-serif;
+  --display:'Syncopate',sans-serif;
+  --amber:#F5A623;
+  --amber-dim:rgba(245,166,35,0.15);
+  --glow-cyan:rgba(0,207,255,0.25);
+  --glow-green:rgba(0,255,138,0.20);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--head);}
+canvas{display:block;position:absolute;top:0;left:0;touch-action:none;}
+
+/* ─── TITLE SCREEN ─── */
+#title-screen{
+  position:fixed;inset:0;z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 35%, rgba(0,40,90,0.22) 0%, transparent 65%),
+             radial-gradient(ellipse at 20% 80%, rgba(100,0,180,0.06) 0%, transparent 50%);
+  pointer-events:all;
+  transition:opacity 1.4s cubic-bezier(0.4,0,0.2,1);
+  overflow:hidden;
+}
+#title-screen.fade-out{opacity:0;pointer-events:none;}
+
+/* Animated corner brackets */
+#title-screen::before,#title-screen::after{
+  content:'';position:absolute;width:120px;height:120px;
+  pointer-events:none;
+}
+#title-screen::before{
+  top:24px;left:24px;
+  border-top:1px solid rgba(0,207,255,0.2);
+  border-left:1px solid rgba(0,207,255,0.2);
+  animation:cornerPulse 4s ease-in-out infinite;
+}
+#title-screen::after{
+  bottom:24px;right:24px;
+  border-bottom:1px solid rgba(245,166,35,0.18);
+  border-right:1px solid rgba(245,166,35,0.18);
+  animation:cornerPulse 4s ease-in-out infinite 2s;
+}
+.title-corner-tr{position:absolute;top:24px;right:24px;width:120px;height:120px;border-top:1px solid rgba(0,207,255,0.12);border-right:1px solid rgba(0,207,255,0.12);pointer-events:none;animation:cornerPulse 4s ease-in-out infinite 1s;}
+.title-corner-bl{position:absolute;bottom:24px;left:24px;width:120px;height:120px;border-bottom:1px solid rgba(245,166,35,0.12);border-left:1px solid rgba(245,166,35,0.12);pointer-events:none;animation:cornerPulse 4s ease-in-out infinite 3s;}
+@keyframes cornerPulse{0%,100%{opacity:0.5}50%{opacity:1}}
+
+/* Center scan line */
+.title-scanline{
+  position:absolute;width:100%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,207,255,0.15) 30%,rgba(0,207,255,0.3) 50%,rgba(0,207,255,0.15) 70%,transparent);
+  animation:scanSweep 8s ease-in-out infinite;pointer-events:none;
+}
+@keyframes scanSweep{0%{top:-2px;opacity:0}10%{opacity:1}90%{opacity:0.4}100%{top:101%;opacity:0}}
+
+/* Eyebrow */
+.title-eyebrow{
+  font-family:var(--mono);font-size:clamp(8px,1.4vw,10px);
+  letter-spacing:8px;color:rgba(0,207,255,0.35);
+  text-transform:uppercase;margin-bottom:28px;
+  animation:titleIn 0.8s ease forwards;opacity:0;
+}
+
+/* Main logo block */
+.title-logo{
+  position:relative;text-align:center;
+  margin-bottom:32px;
+}
+.title-main-line1{
+  font-family:var(--display);font-size:clamp(44px,9.5vw,96px);
+  font-weight:700;letter-spacing:clamp(6px,1.5vw,16px);
+  color:#fff;line-height:0.95;text-transform:uppercase;
+  text-shadow:0 0 60px rgba(0,207,255,0.35),0 0 120px rgba(0,207,255,0.12);
+  animation:titleIn 0.8s ease 0.15s forwards;opacity:0;
+}
+.title-main-line2{
+  font-family:var(--display);font-size:clamp(44px,9.5vw,96px);
+  font-weight:700;letter-spacing:clamp(6px,1.5vw,16px);
+  background:linear-gradient(135deg,#00CFFF 0%,rgba(255,255,255,0.9) 45%,#00FF8A 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:0.95;text-transform:uppercase;
+  animation:titleIn 0.8s ease 0.3s forwards;opacity:0;
+}
+/* Glitch effect on main title */
+.title-main-line2::before{
+  content:'CONDUCTOR';
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-family:var(--display);font-size:inherit;font-weight:700;
+  letter-spacing:inherit;
+  background:linear-gradient(135deg,#FF3A5C,transparent);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  opacity:0;animation:glitchFlash 7s ease-in-out infinite 2s;
+  pointer-events:none;mix-blend-mode:screen;
+}
+@keyframes glitchFlash{
+  0%,95%,100%{opacity:0;clip-path:none;}
+  96%{opacity:0.6;clip-path:inset(15% 0 65% 0);transform:translateX(-48%);}
+  97%{opacity:0;clip-path:inset(80% 0 0% 0);transform:translateX(-51%);}
+  98%{opacity:0.4;clip-path:inset(40% 0 45% 0);transform:translateX(-50%);}
+  99%{opacity:0;}
+}
+
+/* Separator */
+.title-sep{
+  width:clamp(180px,40vw,380px);height:1px;margin:20px auto;
+  background:linear-gradient(90deg,transparent,rgba(0,207,255,0.4) 40%,rgba(245,166,35,0.4) 60%,transparent);
+  animation:titleIn 0.6s ease 0.45s forwards;opacity:0;
+}
+
+/* Diagnostic panel */
+.title-diag{
+  font-family:var(--mono);font-size:clamp(8px,1.6vw,10px);
+  letter-spacing:2px;text-align:left;
+  padding:12px 20px;border:1px solid rgba(0,207,255,0.08);
+  border-radius:4px;background:rgba(0,0,0,0.3);
+  backdrop-filter:blur(4px);
+  margin-bottom:36px;min-width:clamp(220px,50vw,340px);
+  animation:titleIn 0.8s ease 0.6s forwards;opacity:0;
+}
+.diag-row{
+  display:flex;justify-content:space-between;
+  gap:16px;padding:2px 0;
+  color:rgba(168,196,220,0.35);
+}
+.diag-key{color:rgba(168,196,220,0.25);}
+.diag-val{color:rgba(0,207,255,0.5);font-size:0.9em;}
+.diag-val.ok{color:rgba(0,255,138,0.55);}
+.diag-val.wait{color:rgba(245,166,35,0.55);}
+
+/* Buttons */
+.title-actions{
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  margin-bottom:32px;
+  animation:titleIn 0.8s ease 0.85s forwards;opacity:0;
+}
+.title-btn{
+  position:relative;background:transparent;
+  border:1px solid rgba(0,207,255,0.3);
+  color:#fff;font-family:var(--display);font-size:clamp(9px,1.8vw,11px);
+  letter-spacing:clamp(3px,0.8vw,6px);text-transform:uppercase;
+  padding:16px 52px;cursor:pointer;
+  transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
+  overflow:hidden;white-space:nowrap;
+}
+.title-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,207,255,0.08) 0%,rgba(0,207,255,0.02) 100%);
+  opacity:0;transition:opacity 0.4s;
+}
+.title-btn::after{
+  content:'';position:absolute;
+  bottom:0;left:-100%;width:100%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,207,255,0.7),transparent);
+  transition:left 0.5s ease;
+}
+.title-btn:hover::before{opacity:1;}
+.title-btn:hover::after{left:100%;}
+.title-btn:hover{
+  border-color:rgba(0,207,255,0.75);
+  box-shadow:0 0 30px rgba(0,207,255,0.18),0 0 60px rgba(0,207,255,0.06),inset 0 0 16px rgba(0,207,255,0.04);
+  color:#00CFFF;letter-spacing:clamp(4px,1vw,8px);
+}
+.title-btn:active{transform:scale(0.97);}
+.title-btn.resume{
+  border-color:rgba(0,255,138,0.3);color:var(--relay);
+  font-size:clamp(8px,1.5vw,10px);padding:12px 44px;
+}
+.title-btn.resume:hover{
+  border-color:rgba(0,255,138,0.75);
+  box-shadow:0 0 30px rgba(0,255,138,0.18),inset 0 0 16px rgba(0,255,138,0.04);
+  color:#00FF8A;
+}
+
+/* Hints row */
+.title-hints-row{
+  display:flex;gap:clamp(14px,3vw,32px);align-items:center;
+  font-family:var(--mono);font-size:clamp(7px,1.2vw,9px);
+  letter-spacing:2px;text-transform:uppercase;
+  color:rgba(168,196,220,0.18);
+  animation:titleIn 0.8s ease 1.05s forwards;opacity:0;
+}
+.title-hints-row span{display:flex;align-items:center;gap:5px;}
+.title-hints-row span em{font-style:normal;color:rgba(0,207,255,0.25);}
+
+/* Build tag */
+.title-build{
+  position:absolute;bottom:20px;right:24px;
+  font-family:var(--mono);font-size:8px;letter-spacing:2px;
+  color:rgba(255,255,255,0.07);text-transform:uppercase;
+}
+@keyframes titleIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+/* ─── INTRO CINEMATIC BARS ─── */
+#intro-bars{position:fixed;inset:0;z-index:18;pointer-events:none;}
+.intro-bar{
+  position:absolute;left:0;right:0;height:0;background:#06040E;
+  transition:height 1s cubic-bezier(0.4,0,0.2,1);
+}
+.intro-bar.top{top:0;}
+.intro-bar.bottom{bottom:0;}
+#intro-bars.active .intro-bar{height:clamp(40px,7vh,70px);}
+#intro-bars.active .intro-bar.top{
+  border-bottom:1px solid rgba(0,207,255,0.12);
+}
+#intro-bars.active .intro-bar.bottom{
+  border-top:1px solid rgba(0,207,255,0.12);
+}
+
+/* ─── INTRO OVERLAY ─── */
+#intro-narration{
+  position:fixed;bottom:clamp(70px,12vh,120px);left:50%;transform:translateX(-50%);
+  z-index:20;display:flex;flex-direction:column;gap:4px;align-items:center;
+  width:min(520px,90vw);pointer-events:none;
+}
+.intro-line{
+  font-family:var(--mono);font-size:clamp(10px,2.2vw,13px);
+  letter-spacing:3px;color:rgba(168,196,220,0.8);
+  text-align:center;text-transform:uppercase;
+  position:relative;
+  animation:introScan 0.5s ease forwards;
+}
+.intro-line::before{
+  content:'›';margin-right:8px;color:rgba(0,207,255,0.5);font-size:0.9em;
+}
+@keyframes introScan{
+  from{opacity:0;filter:blur(4px);letter-spacing:8px;}
+  to{opacity:1;filter:blur(0);letter-spacing:3px;}
+}
+
+/* Tap to begin */
+#tap-to-begin{
+  position:fixed;bottom:clamp(28px,5vh,52px);left:50%;transform:translateX(-50%);
+  z-index:20;opacity:0;transition:opacity 0.8s ease;pointer-events:none;
+  text-align:center;
+}
+#tap-to-begin.visible{opacity:1;}
+.ttb-inner{
+  position:relative;
+  padding:14px 36px;
+  border:1px solid rgba(0,255,138,0.22);
+  border-radius:2px;
+  background:rgba(6,4,14,0.88);
+  backdrop-filter:blur(8px);
+  overflow:hidden;
+}
+.ttb-inner::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(0,255,138,0.05),transparent);
+  animation:ttbShimmer 2.5s ease-in-out infinite;
+}
+@keyframes ttbShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.ttb-icon{
+  font-size:20px;margin-bottom:6px;
+  color:rgba(0,255,138,0.6);
+  animation:ttbPulse 2.2s ease-in-out infinite;display:block;
+}
+.ttb-text{
+  font-family:var(--display);font-size:clamp(8px,1.5vw,9px);
+  letter-spacing:5px;color:rgba(0,255,138,0.55);text-transform:uppercase;
+  display:block;
+}
+@keyframes ttbPulse{0%,100%{opacity:0.45;transform:scale(0.97);}50%{opacity:1;transform:scale(1.04);}}
+
+/* Skip intro */
+#skip-intro{
+  position:fixed;top:16px;right:16px;z-index:25;
+  background:rgba(6,4,14,0.7);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:3px;padding:7px 16px;cursor:pointer;
+  font-family:var(--mono);font-size:8px;letter-spacing:3px;
+  text-transform:uppercase;color:rgba(168,196,220,0.2);
+  display:none;transition:all 0.3s;backdrop-filter:blur(4px);
+}
+#skip-intro:hover{color:rgba(168,196,220,0.55);border-color:rgba(255,255,255,0.18);}
+#skip-intro.visible{display:block;}
+
+/* ─── GAME CANVAS LAYER ─── */
+#game-canvas-layer{position:fixed;inset:0;z-index:1;opacity:0;transition:opacity 1.5s ease;}
+#game-canvas-layer.visible{opacity:1;}
+
+
+#hud-top{
+  position:fixed;top:0;left:0;right:0;z-index:30;
+  display:none;align-items:center;gap:6px;
+  padding:8px 12px 6px;
+  background:linear-gradient(180deg,rgba(2,4,12,0.97) 0%,rgba(2,4,12,0.6) 80%,transparent);
+  pointer-events:none;
+}
+#hud-top.visible{display:flex;}
+.sb{display:flex;flex-direction:column;background:rgba(4,8,20,0.95);border:1px solid var(--border);border-radius:5px;padding:4px 10px;flex-shrink:0;}
+.sl{font-family:var(--mono);font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+.sv{font-family:var(--mono);font-size:14px;line-height:1.1;transition:color .3s;}
+.sbar{height:2px;margin-top:3px;border-radius:1px;background:rgba(255,255,255,0.04);}
+.sbf{height:100%;border-radius:1px;transition:width .5s,background .5s;}
+.phase-badge{margin-left:auto;background:rgba(4,8,20,0.95);border:1px solid rgba(0,212,255,0.15);border-radius:5px;padding:4px 10px;text-align:right;}
+.phase-num{font-family:var(--mono);font-size:7px;letter-spacing:2px;color:var(--muted);}
+.phase-name{font-family:var(--head);font-size:11px;font-weight:600;letter-spacing:3px;color:rgba(0,212,255,0.6);text-transform:uppercase;}
+
+/* ─── HUD BOTTOM ─── */
+#hud-bottom{
+  position:fixed;bottom:0;left:0;right:0;z-index:30;
+  display:none;align-items:center;
+  gap:5px;padding:8px 10px;
+  background:linear-gradient(0deg,rgba(2,4,12,0.97) 0%,rgba(2,4,12,0.55) 80%,transparent);
+  pointer-events:none;overflow-x:auto;scrollbar-width:none;
+}
+#hud-bottom.visible{display:flex;}
+#hud-bottom::-webkit-scrollbar{display:none;}
+.bstat{display:flex;align-items:center;gap:8px;background:rgba(4,8,20,0.95);border:1px solid var(--border);border-radius:5px;padding:6px 12px;height:36px;flex-shrink:0;}
+.bl{font-family:var(--mono);font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.bv{font-family:var(--mono);font-size:15px;line-height:1;}
+#eeg-container{flex:1;min-width:80px;max-width:160px;height:36px;background:rgba(4,8,20,0.95);border:1px solid var(--border);border-radius:5px;padding:4px 6px;position:relative;overflow:hidden;}
+#eeg-canvas{position:absolute;inset:0;}
+
+/* ─── NARRATOR ─── */
+#narrator{position:fixed;bottom:56px;left:50%;transform:translateX(-50%);z-index:40;display:none;flex-direction:column;gap:6px;align-items:center;width:min(480px,90vw);pointer-events:none;}
+#narrator.visible{display:flex;}
+.nl{background:rgba(0,8,24,0.92);border:1px solid rgba(0,212,255,0.2);border-left:2px solid var(--soma);border-radius:4px;padding:10px 16px;font-family:var(--mono);font-size:11px;line-height:1.6;letter-spacing:0.5px;color:rgba(184,212,240,0.9);animation:slideUp 0.4s ease forwards;max-width:100%;}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* ─── RADIAL MENU ─── */
+#radial-menu{position:fixed;z-index:50;display:none;pointer-events:all;}
+#radial-menu.open{display:block;}
+.radial-backdrop{position:fixed;inset:0;z-index:49;background:rgba(0,0,0,0.3);}
+.radial-btn{position:absolute;width:56px;height:56px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(255,255,255,0.12);background:rgba(4,8,24,0.96);transition:all 0.2s ease;transform:translate(-50%,-50%);pointer-events:all;}
+.radial-btn:hover{transform:translate(-50%,-50%) scale(1.18);border-color:rgba(255,255,255,0.4);}
+.radial-btn.locked{opacity:0.28;cursor:not-allowed;}
+.radial-icon{font-size:18px;line-height:1;margin-bottom:2px;}
+.radial-label{font-family:var(--mono);font-size:7px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}
+.radial-cost{font-family:var(--mono);font-size:7px;color:rgba(0,212,255,0.5);}
+
+/* ─── TUTORIAL PANEL ─── */
+#tutorial-panel{
+  position:fixed;top:62px;left:50%;transform:translateX(-50%);
+  z-index:35;
+  background:rgba(6,4,18,0.96);
+  border:1px solid rgba(0,207,255,0.12);
+  border-left:3px solid var(--soma);
+  border-radius:0 6px 6px 0;
+  width:min(420px,94vw);
+  display:none;pointer-events:none;
+  transition:border-left-color 0.5s ease;
+  backdrop-filter:blur(12px);
+  overflow:hidden;
+}
+#tutorial-panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--soma),transparent 60%);
+  opacity:0.4;transition:background 0.5s ease;
+}
+#tutorial-panel.visible{display:block;}
+
+/* Color variants by neuron step */
+#tutorial-panel[data-neuron="RELAY"]{border-left-color:var(--relay);}
+#tutorial-panel[data-neuron="RELAY"]::before{background:linear-gradient(90deg,var(--relay),transparent 60%);}
+#tutorial-panel[data-neuron="INHIBITOR"]{border-left-color:var(--inh);}
+#tutorial-panel[data-neuron="INHIBITOR"]::before{background:linear-gradient(90deg,var(--inh),transparent 60%);}
+#tutorial-panel[data-neuron="HARVESTER"]{border-left-color:#4ade80;}
+#tutorial-panel[data-neuron="HARVESTER"]::before{background:linear-gradient(90deg,#4ade80,transparent 60%);}
+#tutorial-panel[data-neuron="IGNITION"]{border-left-color:var(--phi);}
+#tutorial-panel[data-neuron="IGNITION"]::before{background:linear-gradient(90deg,var(--phi),transparent 60%);}
+#tutorial-panel[data-neuron="GLIA"]{border-left-color:#63b3ed;}
+#tutorial-panel[data-neuron="GLIA"]::before{background:linear-gradient(90deg,#63b3ed,transparent 60%);}
+#tutorial-panel[data-neuron="OSCILLATOR"]{border-left-color:#e879f9;}
+#tutorial-panel[data-neuron="OSCILLATOR"]::before{background:linear-gradient(90deg,#e879f9,transparent 60%);}
+
+.tut-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px 0 16px;
+}
+.tut-step{
+  font-family:var(--mono);font-size:7px;letter-spacing:3px;
+  text-transform:uppercase;color:rgba(0,255,138,0.4);
+}
+.tut-node-dots{display:flex;gap:5px;align-items:center;}
+.tut-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.1);
+  transition:all 0.4s ease;
+}
+.tut-dot.done{
+  background:rgba(0,255,138,0.5);
+  border-color:rgba(0,255,138,0.7);
+  box-shadow:0 0 6px rgba(0,255,138,0.3);
+}
+.tut-dot.active{
+  background:rgba(0,207,255,0.4);
+  border-color:rgba(0,207,255,0.8);
+  box-shadow:0 0 8px rgba(0,207,255,0.4);
+  animation:dotPulse 1.6s ease-in-out infinite;
+}
+@keyframes dotPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.25);}}
+
+.tut-body-wrap{padding:8px 14px 12px 16px;}
+.tut-title{
+  font-family:var(--display);font-size:clamp(11px,2.2vw,13px);
+  font-weight:700;letter-spacing:2px;
+  color:rgba(255,255,255,0.92);
+  margin-bottom:8px;text-transform:uppercase;
+}
+.tut-body{
+  font-family:var(--mono);font-size:clamp(9px,1.8vw,10.5px);
+  line-height:1.75;color:rgba(168,196,220,0.7);
+  letter-spacing:0.3px;
+}
+.tut-hint{
+  display:flex;align-items:flex-start;gap:10px;
+  margin-top:10px;padding:9px 12px;
+  background:rgba(0,207,255,0.04);
+  border:1px solid rgba(0,207,255,0.1);
+  border-radius:3px;
+  font-family:var(--mono);font-size:9px;
+  color:rgba(0,207,255,0.65);
+  letter-spacing:0.5px;line-height:1.65;
+}
+.tut-hint-icon{font-size:12px;flex-shrink:0;margin-top:1px;color:rgba(0,207,255,0.5);}
+.tut-progress{
+  display:flex;gap:0;height:2px;
+  background:rgba(255,255,255,0.04);
+  border-radius:0 0 0 0;overflow:hidden;
+}
+.tut-bar{height:100%;background:linear-gradient(90deg,var(--relay),var(--soma));border-radius:0;transition:width 0.7s cubic-bezier(0.4,0,0.2,1);}
+
+/* ─── RESEARCH TREE PANEL ─── */
+#research-panel{position:fixed;bottom:0;left:0;right:0;z-index:47;background:rgba(2,6,20,0.98);border-top:1px solid rgba(167,139,250,0.2);border-radius:12px 12px 0 0;transform:translateY(100%);transition:transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94);pointer-events:all;max-height:78vh;overflow-y:auto;}
+#research-panel.open{transform:translateY(0);}
+#research-panel::-webkit-scrollbar{width:3px;}
+#research-panel::-webkit-scrollbar-thumb{background:rgba(167,139,250,0.2);}
+.res-node{background:rgba(4,8,28,0.9);border-radius:6px;padding:14px;border:1px solid rgba(167,139,250,0.12);display:flex;align-items:center;gap:14px;}
+.res-node.researched{border-color:rgba(167,139,250,0.4);background:rgba(16,8,40,0.9);}
+.res-node.locked-res{opacity:0.35;}
+.res-icon-box{width:36px;height:36px;border-radius:50%;border:2px solid rgba(167,139,250,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.res-node.researched .res-icon-box{border-color:#a78bfa;background:rgba(167,139,250,0.1);}
+.res-info{flex:1;}
+.res-name{font-family:var(--head);font-size:14px;font-weight:600;letter-spacing:1px;color:rgba(167,139,250,0.9);margin-bottom:3px;}
+.res-desc{font-family:var(--mono);font-size:9px;line-height:1.6;color:rgba(184,212,240,0.5);}
+.res-btn{flex-shrink:0;padding:8px 14px;background:transparent;border:1px solid rgba(167,139,250,0.3);border-radius:4px;cursor:pointer;font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:rgba(167,139,250,0.7);transition:all 0.2s;white-space:nowrap;}
+.res-btn:hover{border-color:#a78bfa;color:#a78bfa;}
+.res-btn:disabled{opacity:0.3;cursor:default;}
+.res-btn.done{border-color:rgba(0,255,157,0.3);color:rgba(0,255,157,0.6);cursor:default;}
+#research-btn{background:rgba(4,8,24,0.95);border:1px solid rgba(167,139,250,0.25);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:8px;letter-spacing:2px;text-transform:uppercase;color:rgba(167,139,250,0.6);padding:0 14px;height:36px;flex-shrink:0;transition:all 0.2s;}
+#research-btn:hover{border-color:rgba(167,139,250,0.55);color:#a78bfa;}
+
+/* ─── LEXICON PANEL ─── */
+#lexicon-panel{position:fixed;bottom:0;left:0;right:0;z-index:46;background:rgba(2,6,20,0.98);border-top:1px solid rgba(0,212,255,0.15);border-radius:12px 12px 0 0;transform:translateY(100%);transition:transform 0.38s cubic-bezier(0.25,0.46,0.45,0.94);pointer-events:all;max-height:78vh;overflow-y:auto;}
+#lexicon-panel.open{transform:translateY(0);}
+#lexicon-panel::-webkit-scrollbar{width:3px;}
+#lexicon-panel::-webkit-scrollbar-thumb{background:rgba(0,180,255,0.2);}
+.lex-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;position:sticky;top:0;background:rgba(2,6,20,0.98);border-bottom:1px solid rgba(0,212,255,0.08);z-index:1;}
+.lex-title{font-family:var(--head);font-size:16px;font-weight:700;letter-spacing:3px;color:rgba(0,212,255,0.9);text-transform:uppercase;}
+.lex-close{background:none;border:none;cursor:pointer;font-family:var(--mono);font-size:14px;color:var(--muted);padding:4px 8px;}
+.lex-close:hover{color:var(--text);}
+.lex-intro{font-family:var(--mono);font-size:9px;line-height:1.7;color:rgba(184,212,240,0.4);padding:10px 20px 4px;letter-spacing:0.5px;}
+.lex-cards{padding:10px 20px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
+.lex-card{background:rgba(4,8,28,0.9);border-radius:6px;padding:14px;border-left:3px solid;}
+.lex-card-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.lex-icon{font-size:18px;width:28px;text-align:center;}
+.lex-name{font-family:var(--head);font-size:15px;font-weight:700;letter-spacing:2px;}
+.lex-tier{font-family:var(--mono);font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-left:auto;}
+.lex-desc{font-family:var(--mono);font-size:9px;line-height:1.7;color:rgba(184,212,240,0.6);margin-bottom:10px;}
+.lex-rules{display:flex;flex-direction:column;gap:4px;}
+.lex-rule{display:flex;align-items:flex-start;gap:6px;font-family:var(--mono);font-size:8px;line-height:1.6;color:rgba(184,212,240,0.5);}
+.lex-rule-icon{flex-shrink:0;font-size:10px;}
+.lex-rule.good .lex-rule-icon{color:var(--relay);}
+.lex-rule.warn .lex-rule-icon{color:var(--phi);}
+.lex-rule.bad  .lex-rule-icon{color:var(--danger);}
+#lexicon-btn{background:rgba(4,8,24,0.95);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:0 14px;height:36px;flex-shrink:0;transition:all 0.2s;}
+#lexicon-btn:hover{border-color:rgba(0,212,255,0.35);color:var(--soma);}
+
+/* ─── NEURON INFO BOTTOM SHEET ─── */
+#bottom-sheet{position:fixed;bottom:0;left:0;right:0;z-index:45;background:rgba(2,6,20,0.97);border-top:1px solid rgba(0,212,255,0.15);border-radius:12px 12px 0 0;padding:16px 20px 36px;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);pointer-events:all;}
+#bottom-sheet.open{transform:translateY(0);}
+.sheet-handle{width:36px;height:3px;border-radius:2px;background:rgba(255,255,255,0.12);margin:0 auto 14px;}
+.sheet-title{font-family:var(--head);font-size:18px;font-weight:600;letter-spacing:2px;margin-bottom:4px;}
+.sheet-sub{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
+.sheet-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.sheet-stat{background:rgba(4,8,24,0.8);border:1px solid var(--border);border-radius:5px;padding:8px 10px;}
+.sheet-stat-label{font-family:var(--mono);font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
+.sheet-stat-val{font-family:var(--mono);font-size:14px;}
+.sheet-actions{display:flex;gap:8px;}
+.sheet-btn{flex:1;padding:10px;background:transparent;border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text);transition:all 0.2s;}
+.sheet-btn:hover{border-color:rgba(0,212,255,0.4);color:var(--soma);}
+.sheet-btn.danger{border-color:rgba(255,68,102,0.2);color:var(--danger);}
+.sheet-btn.danger:hover{border-color:var(--danger);}
+.sheet-btn:disabled{opacity:0.3;cursor:default;}
+#sheet-close-btn{position:absolute;top:14px;right:16px;background:none;border:none;cursor:pointer;font-family:var(--mono);font-size:14px;color:var(--muted);padding:4px;}
+#sheet-close-btn:hover{color:var(--text);}
+
+/* ─── CONNECT HINT ─── */
+#connect-hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:35;background:rgba(0,8,24,0.92);border:1px solid rgba(0,255,157,0.3);border-radius:6px;padding:10px 18px;font-family:var(--mono);font-size:11px;letter-spacing:1px;color:rgba(0,255,157,0.8);pointer-events:none;opacity:0;transition:opacity 0.3s;text-align:center;}
+#connect-hint.visible{opacity:1;}
+
+/* ─── TOAST ─── */
+#toast{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:60;background:rgba(2,6,18,0.96);border:1px solid rgba(255,255,255,0.1);border-radius:5px;padding:8px 16px;font-family:var(--mono);font-size:10px;letter-spacing:1px;pointer-events:none;opacity:0;transition:opacity 0.3s;white-space:nowrap;}
+#toast.visible{opacity:1;}
+
+/* ─── IGNITION FLASH ─── */
+#ignition-flash{position:fixed;inset:0;z-index:80;pointer-events:none;opacity:0;}
+@keyframes ignFlash{0%{opacity:0.7}100%{opacity:0}}
+
+/* ─── PHASE OVERLAY ─── */
+#phase-overlay{position:fixed;inset:0;z-index:75;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(0,60,140,0.35) 0%,transparent 70%);}
+#phase-overlay.active{animation:phaseIn 2.5s ease forwards;}
+@keyframes phaseIn{0%{opacity:0}20%{opacity:1}80%{opacity:1}100%{opacity:0}}
+.po-label{font-family:var(--mono);font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--relay);}
+.po-name{font-family:var(--head);font-size:clamp(32px,6vw,52px);font-weight:700;letter-spacing:8px;text-transform:uppercase;color:#fff;text-shadow:0 0 40px var(--soma);}
+
+/* ─── WIN SCREEN ─── */
+#win-screen{position:fixed;inset:0;z-index:95;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,2,10,0.96);pointer-events:all;}
+#win-screen.visible{display:flex;}
+
+/* ─── MISSION TOAST ─── */
+#mission-toast{position:fixed;top:72px;right:20px;z-index:62;background:rgba(2,6,18,0.97);border:1px solid rgba(0,255,157,0.5);border-left:3px solid rgba(0,255,157,0.9);border-radius:6px;padding:12px 16px;pointer-events:none;opacity:0;transform:translateX(40px);transition:opacity 0.4s ease,transform 0.4s ease;min-width:220px;}
+#mission-toast.visible{opacity:1;transform:translateX(0);}
+.mt-label{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(0,255,157,0.5);text-transform:uppercase;margin-bottom:5px;}
+.mt-name{font-family:var(--head);font-size:14px;font-weight:600;letter-spacing:1px;color:rgba(0,255,157,0.95);}
+.mt-reward{font-family:var(--mono);font-size:9px;color:rgba(0,212,255,0.7);margin-top:6px;letter-spacing:0.5px;}
+
+/* ─── EXPLAIN / DIAGNOSE PANEL ─── */
+#explain-panel{position:fixed;bottom:56px;right:12px;z-index:38;background:rgba(2,6,18,0.96);border:1px solid rgba(251,191,36,0.3);border-left:3px solid rgba(251,191,36,0.7);border-radius:6px;padding:12px 16px;pointer-events:none;opacity:0;transform:translateY(8px);transition:opacity 0.4s ease,transform 0.4s ease;max-width:260px;display:none;}
+#explain-panel.visible{opacity:1;transform:translateY(0);display:block;}
+.exp-label{font-family:var(--mono);font-size:7px;letter-spacing:3px;color:rgba(251,191,36,0.5);text-transform:uppercase;margin-bottom:5px;}
+.exp-body{font-family:var(--mono);font-size:9px;line-height:1.7;color:rgba(184,212,240,0.8);}
+.exp-action{font-family:var(--mono);font-size:9px;color:rgba(0,255,157,0.7);margin-top:6px;line-height:1.6;}
+
+/* ─── HEATMAP TOGGLE ─── */
+#heatmap-btn{background:rgba(4,8,24,0.95);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:0 14px;height:36px;flex-shrink:0;transition:all 0.2s;display:none;}
+#heatmap-btn:hover{border-color:rgba(255,124,51,0.4);color:var(--heat);}
+#heatmap-btn.active{border-color:rgba(255,124,51,0.6);color:var(--heat);background:rgba(20,4,0,0.95);}
+
+/* ─── COALITION / IGNITION HUD ─── */
+#hud-coalition{display:none;flex-direction:column;background:rgba(4,8,20,0.95);border:1px solid var(--border);border-radius:5px;padding:4px 10px;flex-shrink:0;}
+#hud-ignready{display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,8,20,0.95);border:1px solid rgba(251,191,36,0.2);border-radius:5px;padding:4px 10px;flex-shrink:0;gap:2px;}
+.ign-icon{font-size:14px;line-height:1;}
+.ign-pct{font-family:var(--mono);font-size:10px;line-height:1;color:rgba(251,191,36,0.7);}
+
+/* ─── DOPAMINE DISPLAY ─── */
+#hud-dopamine{display:none;flex-direction:column;background:rgba(4,8,20,0.95);border:1px solid rgba(167,139,250,0.2);border-radius:5px;padding:4px 10px;flex-shrink:0;}
+
+/* ─── PHASE REWARD OVERLAY ─── */
+#phase-reward{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:70;background:rgba(2,6,18,0.97);border:1px solid rgba(0,255,157,0.3);border-radius:8px;padding:20px 28px;text-align:center;pointer-events:none;opacity:0;transition:opacity 0.5s ease;min-width:220px;}
+#phase-reward.visible{opacity:1;}
+.pr-title{font-family:var(--head);font-size:16px;font-weight:700;letter-spacing:3px;color:rgba(0,255,157,0.9);margin-bottom:8px;text-transform:uppercase;}
+.pr-resources{font-family:var(--mono);font-size:11px;color:rgba(0,212,255,0.8);line-height:1.8;}
+
+/* ─── MINIMAP ─── */
+#minimap{position:fixed;bottom:52px;right:12px;z-index:36;width:130px;height:96px;background:rgba(2,6,18,0.94);border:1px solid rgba(0,212,255,0.12);border-radius:6px;overflow:hidden;display:none;cursor:pointer;}
+#minimap:hover{border-color:rgba(0,212,255,0.3);}
+#minimap canvas{position:absolute;inset:0;}
+.mm-label{position:absolute;bottom:3px;left:6px;font-family:var(--mono);font-size:6px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(0,212,255,0.25);pointer-events:none;}
+
+/* ─── COHERENCE RING (canvas-drawn but helps z-order) ─── */
+#coherence-overlay{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity 0.6s;}
+#coherence-overlay.active{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- ═══ TITLE SCREEN ═══ -->
+<div id="title-screen">
+  <canvas id="title-canvas" style="position:absolute;top:0;left:0;pointer-events:none;"></canvas>
+
+  <!-- Decorative corner brackets -->
+  <div class="title-corner-tr"></div>
+  <div class="title-corner-bl"></div>
+
+  <!-- Animated scan line -->
+  <div class="title-scanline"></div>
+
+  <!-- Eyebrow -->
+  <div class="title-eyebrow">A Consciousness Simulation</div>
+
+  <!-- Main title block -->
+  <div class="title-logo">
+    <div class="title-main-line1">Neural</div>
+    <div class="title-main-line2">Conductor</div>
+  </div>
+
+  <!-- Separator -->
+  <div class="title-sep"></div>
+
+  <!-- Substrate diagnostic readout -->
+  <div class="title-diag">
+    <div class="diag-row"><span class="diag-key">SUBSTRATE MATRIX</span><span class="diag-val ok">ONLINE</span></div>
+    <div class="diag-row"><span class="diag-key">CORTICAL COMPILER</span><span class="diag-val ok">READY</span></div>
+    <div class="diag-row"><span class="diag-key">NEURAL SCAFFOLD</span><span class="diag-val ok">STABLE</span></div>
+    <div class="diag-row"><span class="diag-key">FIRST IMPULSE</span><span class="diag-val wait">AWAITING INPUT</span></div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="title-actions">
+    <button class="title-btn" id="start-btn">Initialize Substrate</button>
+    <button class="title-btn resume" id="resume-btn" style="display:none">Resume Network</button>
+  </div>
+
+  <!-- Control hints -->
+  <div class="title-hints-row">
+    <span><em>◈</em> Tap to Place</span>
+    <span><em>⟂</em> Long-press to Connect</span>
+    <span><em>⊡</em> Pinch to Zoom</span>
+  </div>
+
+  <div class="title-build">Build 4.0 · Sprint 5–6</div>
+</div>
+
+<!-- ═══ GAME CANVAS ═══ -->
+<div id="game-canvas-layer">
+  <canvas id="game-canvas"></canvas>
+</div>
+
+<!-- ═══ INTRO CINEMATIC BARS ═══ -->
+<div id="intro-bars">
+  <div class="intro-bar top"></div>
+  <div class="intro-bar bottom"></div>
+</div>
+
+<!-- ═══ INTRO OVERLAYS ═══ -->
+<div id="intro-narration"></div>
+<div id="tap-to-begin">
+  <div class="ttb-inner">
+    <em class="ttb-icon">◈</em>
+    <span class="ttb-text">Tap the field to begin</span>
+  </div>
+</div>
+<button id="skip-intro">Skip →</button>
+
+<!-- ═══ HUD ═══ -->
+<div id="hud-top">
+  <div class="sb">
+    <div class="sl">µV Energy</div>
+    <div class="sv" id="hud-energy" style="color:var(--soma)">150.0</div>
+    <div class="sbar"><div class="sbf" id="hud-energy-bar" style="background:var(--soma);width:75%"></div></div>
+  </div>
+  <div class="sb">
+    <div class="sl">Biomass</div>
+    <div class="sv" id="hud-biomass" style="color:var(--relay)">35.0</div>
+    <div class="sbar"><div class="sbf" id="hud-biomass-bar" style="background:var(--relay);width:35%"></div></div>
+  </div>
+  <div class="sb">
+    <div class="sl">Stability</div>
+    <div class="sv" id="hud-stability" style="color:#86efac">100%</div>
+    <div class="sbar"><div class="sbf" id="hud-stab-bar" style="background:#86efac;width:100%"></div></div>
+  </div>
+  <div class="sb" id="hud-kn-block" style="display:none">
+    <div class="sl">Knowledge</div>
+    <div class="sv" id="hud-kn" style="color:#a78bfa">0</div>
+    <div class="sbar"><div class="sbf" id="hud-kn-bar" style="background:#a78bfa;width:0%"></div></div>
+  </div>
+  <div class="sb" id="hud-phi-block" style="display:none">
+    <div class="sl">Φ Phi</div>
+    <div class="sv" id="hud-phi" style="color:var(--phi)">0</div>
+    <div class="sbar"><div class="sbf" id="hud-phi-bar" style="background:var(--phi);width:0%"></div></div>
+  </div>
+  <div class="phase-badge" id="hud-phase">
+    <div class="phase-num">Phase 1</div>
+    <div class="phase-name">Primordial</div>
+  </div>
+</div>
+
+<div id="hud-bottom">
+  <div class="bstat">
+    <div class="bl">Heat</div>
+    <div class="bv" id="hud-heat" style="color:var(--heat)">0%</div>
+  </div>
+  <div class="bstat">
+    <div class="bl">Neurons</div>
+    <div class="bv" id="hud-neurons" style="color:var(--text)">0</div>
+  </div>
+  <div class="bstat">
+    <div class="bl">Synapses</div>
+    <div class="bv" id="hud-synapses" style="color:var(--text)">0</div>
+  </div>
+  <div class="bstat">
+    <div class="bl">Ignitions</div>
+    <div class="bv" id="hud-ign" style="color:var(--phi)">0</div>
+  </div>
+  <div class="bstat">
+    <div class="bl">Sig/s</div>
+    <div class="bv" id="hud-sps" style="color:var(--relay)">0</div>
+  </div>
+  <div id="eeg-container">
+    <canvas id="eeg-canvas"></canvas>
+  </div>
+  <div id="hud-coalition">
+    <div class="bl">Coalition</div>
+    <div class="bv" id="hud-coal-val" style="color:var(--relay)">0%</div>
+  </div>
+  <div id="hud-ignready">
+    <div class="ign-icon" id="hud-ign-icon">⚡</div>
+    <div class="ign-pct" id="hud-ign-pct">0%</div>
+  </div>
+  <div id="hud-dopamine">
+    <div class="bl">Dopamin</div>
+    <div class="bv" id="hud-da-val" style="color:#a78bfa">0%</div>
+  </div>
+  <div id="hud-deltamode" style="display:none;">
+    <div class="bl" style="color:rgba(99,180,255,0.6);">Δ-Mode</div>
+    <div class="bv" id="hud-delta-label" style="color:#60a5fa">—</div>
+  </div>
+  <div id="hud-phaselock" style="display:none;">
+    <div class="bl" style="color:rgba(232,121,249,0.5);">Phase Lock</div>
+    <div class="bv" id="hud-phaselock-val" style="color:#e879f9">0%</div>
+  </div>
+  <button id="lexicon-btn">? Lexicon</button>
+  <button id="heatmap-btn">🌡 Heat</button>
+  <button id="research-btn" style="display:none">⬡ Research</button>
+</div>
+
+<!-- ═══ NARRATOR ═══ -->
+<div id="narrator" class="visible"></div>
+
+<!-- ═══ TUTORIAL ═══ -->
+<div id="tutorial-panel" data-neuron="SOMA">
+  <div class="tut-header">
+    <div class="tut-step" id="tut-step">Schritt 1 von 7</div>
+    <div class="tut-node-dots" id="tut-dots">
+      <div class="tut-dot active"></div>
+      <div class="tut-dot"></div>
+      <div class="tut-dot"></div>
+      <div class="tut-dot"></div>
+      <div class="tut-dot"></div>
+      <div class="tut-dot"></div>
+      <div class="tut-dot"></div>
+      <div class="tut-dot"></div>
+    </div>
+  </div>
+  <div class="tut-body-wrap">
+    <div class="tut-title" id="tut-title">RELAY platzieren</div>
+    <div class="tut-body" id="tut-body">Tippe auf eine leere Fläche um das Platzierungsmenü zu öffnen, dann wähle RELAY.</div>
+    <div class="tut-hint" id="tut-hint" style="display:none">
+      <span class="tut-hint-icon" id="tut-hint-icon">›</span>
+      <span id="tut-hint-text"></span>
+    </div>
+  </div>
+  <div class="tut-progress"><div class="tut-bar" id="tut-bar" style="width:14%"></div></div>
+</div>
+
+<!-- ═══ CONNECT HINT ═══ -->
+<div id="connect-hint">Ein anderes Neuron antippen zum Verbinden · Leere Fläche zum Abbrechen</div>
+
+<!-- ═══ TOAST ═══ -->
+<div id="toast"></div>
+
+<!-- ═══ RADIAL MENU ═══ -->
+<div id="radial-backdrop" class="radial-backdrop" style="display:none"></div>
+<div id="radial-menu"></div>
+
+<!-- ═══ BOTTOM SHEET ═══ -->
+<div id="bottom-sheet">
+  <button id="sheet-close-btn">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheet-title">SOMA</div>
+  <div class="sheet-sub" id="sheet-sub">Excitatory · Level 1</div>
+  <div class="sheet-stats">
+    <div class="sheet-stat"><div class="sheet-stat-label">Activity</div><div class="sheet-stat-val" id="sheet-activity">0.00</div></div>
+    <div class="sheet-stat"><div class="sheet-stat-label">Heat</div><div class="sheet-stat-val" id="sheet-heat">0%</div></div>
+    <div class="sheet-stat"><div class="sheet-stat-label">Level</div><div class="sheet-stat-val" id="sheet-level">1</div></div>
+    <div class="sheet-stat"><div class="sheet-stat-label">Signals Out</div><div class="sheet-stat-val" id="sheet-sigs">0</div></div>
+  </div>
+  <div class="sheet-actions">
+    <button class="sheet-btn" id="sheet-upgrade-btn">Upgrade</button>
+    <button class="sheet-btn" id="sheet-connect-btn">Connect Mode</button>
+    <button class="sheet-btn danger" id="sheet-remove-btn">Remove</button>
+  </div>
+</div>
+
+<!-- ═══ RESEARCH TREE PANEL ═══ -->
+<div id="research-panel">
+  <div class="lex-header">
+    <div class="lex-title">Research Tree</div>
+    <button class="lex-close" id="research-close-btn">✕ Close</button>
+  </div>
+  <div class="lex-intro" id="research-intro">Spend Knowledge to research upgrades that improve your entire network. Knowledge is generated by SENSOR and RESEARCH neurons.</div>
+  <div id="research-nodes" style="padding:12px 20px 40px;display:flex;flex-direction:column;gap:10px;"></div>
+</div>
+
+<!-- ═══ LEXICON PANEL ═══ -->
+<div id="lexicon-panel">
+  <div class="lex-header">
+    <div class="lex-title">Neuron Lexicon</div>
+    <button class="lex-close" id="lex-close-btn">✕ Close</button>
+  </div>
+  <div class="lex-intro">Signals travel in the direction you connect neurons. Long-press a neuron to start a connection, then tap the target. Direction matters — INHIBITOR absorbs signals to cool; it does not re-fire.</div>
+  <div class="lex-cards" id="lex-cards"></div>
+</div>
+
+<!-- ═══ FX OVERLAYS ═══ -->
+<div id="ignition-flash"></div>
+<div id="phase-overlay">
+  <div class="po-label">Phase Transition</div>
+  <div class="po-name" id="po-name">EMERGENCE</div>
+</div>
+
+<!-- ═══ MISSION TOAST ═══ -->
+<div id="mission-toast">
+  <div class="mt-label">Mission abgeschlossen</div>
+  <div class="mt-name" id="mt-name">Erste Verbindung</div>
+  <div class="mt-reward" id="mt-reward">+30 µV · RELAY freigeschaltet</div>
+</div>
+
+<!-- ═══ EXPLAIN PANEL ═══ -->
+<div id="explain-panel">
+  <div class="exp-label">Diagnose</div>
+  <div class="exp-body" id="exp-body">Network status nominal.</div>
+  <div class="exp-action" id="exp-action"></div>
+</div>
+
+<!-- ═══ PHASE REWARD ═══ -->
+<div id="phase-reward">
+  <div class="pr-title" id="pr-title">Mission Complete</div>
+  <div class="pr-resources" id="pr-resources"></div>
+</div>
+
+<!-- ═══ MINIMAP ═══ -->
+<div id="minimap" title="Doppeltipp zum Zentrieren">
+  <canvas id="minimap-canvas"></canvas>
+  <div class="mm-label">Netz</div>
+</div>
+
+<!-- ═══ WIN SCREEN ═══ -->
+<div id="win-screen">
+  <div style="text-align:center;max-width:420px;padding:24px;">
+    <div style="font-family:var(--mono);font-size:11px;letter-spacing:4px;color:var(--relay);margin-bottom:16px">BEWUSSTSEIN ERREICHT</div>
+    <div class="win-phi" style="font-family:var(--head);font-size:clamp(40px,8vw,64px);font-weight:700;letter-spacing:4px;background:linear-gradient(135deg,var(--phi),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Φ = 3000</div>
+    <div style="font-family:var(--mono);font-size:11px;color:rgba(184,212,240,0.45);margin-top:14px;line-height:1.7">Das Netz hat integrierte Information erreicht.<br>Ein Geist ist aus dem Substrat entstanden.</div>
+    <div class="win-stats"></div>
+    <button class="title-btn" style="margin-top:28px" onclick="location.reload()">Erneut beginnen</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 1 — CONSTANTS
+// ══════════════════════════════════════════════════════════════
+const C = {
+  ENERGY_START:    90,
+  BIOMASS_START:   35,
+  KNOWLEDGE_START: 0,
+  STABILITY_START: 100,
+  WIN_PHI:         3000,
+  NEURON_RADIUS:   18,
+  DRAG_THRESHOLD:  10,
+  LONGPRESS_MS:    380,
+  CONNECT_TIMEOUT: 8000,
+  PHI_PER_IGNITION:15,
+  ZOOM_MIN:        0.22,
+  ZOOM_MAX:        3.5,
+  AUTOSAVE_MS:     60000,
+  PHASE_THRESHOLDS:[0, 0, 80, 250, 600, 1400, 3000],
+  PHASE_NAMES:     ['','PRIMORDIAL','EMERGENCE','COHERENCE','RESONANCE','INTEGRATION','TRANSCENDENCE'],
+  COSTS: {
+    // Tier 1
+    SOMA:        {energy:0,   biomass:0,  knowledge:0 },
+    RELAY:       {energy:80,  biomass:10, knowledge:0 },
+    INHIBITOR:   {energy:150, biomass:14, knowledge:0 },
+    SENSOR:      {energy:90,  biomass:12, knowledge:0 },
+    HARVESTER:   {energy:60,  biomass:16, knowledge:0 },
+    // Tier 2
+    GLIA:        {energy:120, biomass:18, knowledge:0 },
+    STABILIZER:  {energy:50,  biomass:18, knowledge:0 },
+    AMPLIFIER:   {energy:110, biomass:22, knowledge:0 },
+    // Tier 3
+    OSCILLATOR:  {energy:130, biomass:20, knowledge:0 },
+    MEMORY:      {energy:190, biomass:28, knowledge:0 },
+    PLASTICITY:  {energy:160, biomass:24, knowledge:3 },
+    // Tier 4
+    ATTENTION:   {energy:200, biomass:32, knowledge:5 },
+    COORDINATOR: {energy:240, biomass:36, knowledge:8 },
+    // Tier 5
+    RESEARCH:    {energy:280, biomass:40, knowledge:5 },
+  },
+  // Upgrade costs: L1→2, L2→3, L3→4, L4→5
+  UPGRADE_COSTS:   [180, 300, 500, 800],
+  UPGRADE_KN_COSTS:[0,   0,   0,   15 ],  // L4→5 needs KN
+  // Intro act timing (seconds)
+  INTRO: {
+    SILENCE_END:   20,
+    SOMA_END:      35,
+    FIELD_END:     55,
+    GHOST_END:     78,
+    DECISION_AT:   78
+  }
+};
+
+const PAL = {
+  SOMA:        {r:0,  g:212,b:255,hex:'#00d4ff'},
+  RELAY:       {r:0,  g:255,b:157,hex:'#00ff9d'},
+  INHIBITOR:   {r:192,g:132,b:252,hex:'#c084fc'},
+  SENSOR:      {r:251,g:191,b:36, hex:'#fbbf24'},
+  HARVESTER:   {r:74, g:222,b:128,hex:'#4ade80'},
+  GLIA:        {r:99, g:179,b:237,hex:'#63b3ed'},
+  STABILIZER:  {r:52, g:211,b:153,hex:'#34d399'},
+  AMPLIFIER:   {r:251,g:113,b:33, hex:'#fb7121'},
+  OSCILLATOR:  {r:232,g:121,b:249,hex:'#e879f9'},
+  MEMORY:      {r:99, g:102,b:241,hex:'#6366f1'},
+  PLASTICITY:  {r:20, g:184,b:166,hex:'#14b8a6'},
+  ATTENTION:   {r:250,g:204,b:21, hex:'#facc15'},
+  COORDINATOR: {r:239,g:68, b:68, hex:'#ef4444'},
+  RESEARCH:    {r:255,g:255,b:255,hex:'#ffffff'}
+};
+
+const LABELS = {
+  SOMA:'SOMA', RELAY:'RELAY', INHIBITOR:'INH', SENSOR:'SENS',
+  HARVESTER:'HARV', GLIA:'GLIA', STABILIZER:'STAB', AMPLIFIER:'AMP',
+  OSCILLATOR:'OSC', MEMORY:'MEM', PLASTICITY:'PLAS',
+  ATTENTION:'ATTN', COORDINATOR:'COORD', RESEARCH:'RES'
+};
+
+const NARLINES = {
+  soma:     '● SOMA aktiv. µV-Produktion beginnt. Long-press zum Verbinden.',
+  relay:    '◆ RELAY platziert. Verbinde es mit dem SOMA — long-press ein Neuron.',
+  syn:      '— Synapse gebildet. Signale fließen zwischen Neuronen.',
+  inh:      '⊖ INHIBITOR platziert. Er kühlt Hitze und stabilisiert das Netz.',
+  harv:     '⬡ HARVESTER aktiv. Biomasse-Produktion beginnt.',
+  glia:     '✦ GLIA aktiv. Stützgewebe stabilisiert und kühlt das Substrat.',
+  stab:     '⬟ STABILIZER eingesetzt. Kaskadenausfälle werden unterdrückt.',
+  amp:      '⚡ AMPLIFIER online. Signaldurchsatz erhöht — Heat beobachten.',
+  osc:      '◎ OSZILLATOR pulsiert. Rhythmisches Feuern synchronisiert das Netz.',
+  mem:      '▣ MEMORY-Knoten aktiv. Aktivierungsmuster werden kodiert.',
+  plas:     '⟡ PLASTIZITÄT aktiv. Synaps-Gewichte passen sich an.',
+  attn:     '◉ AUFMERKSAMKEIT fokussiert. Selektive Verstärkung aktiver Pfade.',
+  coord:    '✶ KOORDINATOR online. Koalitions-Synchronisation auf Maximum.',
+  research: '∞ RESEARCH-Knoten aktiv. Wissensproduktion beschleunigt.',
+  placed:   '— Neuron dem Substrat hinzugefügt.',
+  ign:      '✦ ZÜNDUNG. Das Netz feuert synchron. Φ beginnt zu steigen.',
+  ign2:     '✦✦ Zweite Zündung. Das System beginnt, sich selbst zu erkennen.',
+  ignmore:  '✦ Zündungskaskade. Bewusstsein akkumuliert.',
+  upg:      '— Upgrade erfolgreich. Effizienz erhöht.',
+  collapse: '⚠ Kaskadenausfall. Netz teilweise kollabiert. Wiederaufbau.',
+  heat_warn:'⚠ Kritische Hitze. INHIBITOR oder GLIA einsetzen.',
+  stab_warn:'⚠ Stabilität sinkt. Das Netz ist überlastet.',
+  saved:    '◈ Fortschritt gespeichert.',
+  loaded:   '◈ Netz aus dem Speicher wiederhergestellt.'
+};
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 2 — STATE
+// ══════════════════════════════════════════════════════════════
+let uid = 1;
+
+// Top-level app screen state
+const app = { screen: 'title' }; // 'title' | 'intro' | 'game'
+
+// Intro state machine
+const intro = {
+  time:          0,
+  phase:         0,    // 0=silence 1=soma_birth 2=field_open 3=ghost_hints 4=decision
+  somaId:        null,
+  somaProgress:  0,    // 0→1: soma birth animation
+  ghosts: [            // Ghost neuron hints
+    {wx:-130, wy:75,  type:'RELAY',    alpha:0, state:'in'},
+    {wx:110,  wy:85,  type:'SENSOR',   alpha:0, state:'in'},
+    {wx:-55,  wy:-125,type:'INHIBITOR',alpha:0, state:'in'}
+  ],
+  shownNarLines: new Set(),
+  skipReady:     false,
+  canTap:        false  // true once player can tap to start game
+};
+
+// Game simulation state
+const state = {
+  energy:       C.ENERGY_START,
+  biomass:      C.BIOMASS_START,
+  stability:    C.STABILITY_START,
+  knowledge:    C.KNOWLEDGE_START,
+  dopamine:     0,
+  heat:         0,
+  noise:        0.05,
+  coherence:    0,
+  phi:          0,
+  phase:        1,
+  ignitions:    0,
+  signalsPerSec:0,
+  neurons:      [],
+  synapses:     [],
+  signals:      [],
+  selected:     null,
+  connectMode:  null,
+  connectTimer: null,
+  gameOver:     false,
+  started:      false,
+  time:         0,
+  sigCount:     0,
+  sigTimer:     0,
+  eegHistory:   [],
+  heatWarned:   false,
+  stabWarned:   false,
+  researched:   new Set(),
+  completedMissions: new Set(),
+  equilTimer:   0,          // seconds stability > 90
+  heatmapOn:    false,
+  particles:    [],         // visual particle pool
+
+  // Sprint 5-6: Cognition systems
+  phaseLock:    0,          // 0-1 phase lock ratio across OSCILLATORs
+  deltaMode:    false,      // true when network in slow synchronized delta state
+  deltaModeTimer: 0,        // seconds in delta mode
+  clusterQuality: [],       // detected cluster data [{nodes, type, quality}]
+  engramCooldown: 0,        // MEMORY engram burst cooldown (seconds)
+  consciousnessApproach: 0, // 0-1 as phi nears WIN_PHI (last 15%)
+  networkAge:   0,          // total play time in minutes
+  resEffects: {
+    synapseSpeedMult:  1.0,
+    heatDecayMult:     1.0,
+    signalEnergyBonus: 0.18,
+    phiResonance:      false,
+    biomassRecycle:    0.0,
+    coalitionBonus:    1.4,
+    memoryDepth:       1,
+    maxSynapseWeight:  2.5,
+  }
+};
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 3 — AUDIO (Web Audio API)
+// ══════════════════════════════════════════════════════════════
+let AC = null, masterGain = null, ambGain = null;
+
+function initAudio() {
+  if (AC) return;
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = AC.createGain();
+    masterGain.gain.value = 0.22;
+    masterGain.connect(AC.destination);
+
+    // Ambient drone: two detuned sines through lowpass
+    const osc1 = AC.createOscillator(), osc2 = AC.createOscillator();
+    const filter = AC.createBiquadFilter();
+    ambGain = AC.createGain();
+    ambGain.gain.value = 0;
+    osc1.type = 'sine'; osc1.frequency.value = 55;
+    osc2.type = 'sine'; osc2.frequency.value = 57.8;
+    filter.type = 'lowpass'; filter.frequency.value = 280; filter.Q.value = 0.9;
+    osc1.connect(ambGain); osc2.connect(ambGain);
+    ambGain.connect(filter); filter.connect(masterGain);
+    osc1.start(); osc2.start();
+    ambGain.gain.linearRampToValueAtTime(0.12, AC.currentTime + 10);
+  } catch(e) { AC = null; }
+}
+
+function playNote(freq, dur, vol=0.07, type='triangle') {
+  if (!AC) return;
+  try {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.connect(g); g.connect(masterGain);
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+    o.start(); o.stop(AC.currentTime + dur + 0.01);
+  } catch(e) {}
+}
+
+function sndPlace()    { playNote(660, 0.06); }
+function sndConnect()  { playNote(880, 0.05); setTimeout(()=>playNote(1100, 0.04), 70); }
+function sndUpgrade()  { playNote(1200, 0.12, 0.08, 'sine'); }
+function sndIgnition() {
+  [220,330,440,660].forEach((f,i) => setTimeout(()=>playNote(f, 0.6, 0.1, 'sine'), i*80));
+}
+function sndSignal()   { playNote(1400, 0.025, 0.02); }
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 4 — UTILS
+// ══════════════════════════════════════════════════════════════
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const lerp  = (a,b,t) => a + (b-a)*t;
+const easeOut = t => 1 - (1-t)*(1-t);
+const gn = id => state.neurons.find(n => n.id === id) || null;
+const gs = id => state.synapses.find(s => s.id === id) || null;
+const colStr = (p, a=1) => `rgba(${p.r},${p.g},${p.b},${a})`;
+const stabColor = v => v > 70 ? '#86efac' : v > 35 ? '#fbbf24' : '#f87171';
+
+function getNeuronAt(wx, wy) {
+  let best=null, bd=999;
+  for (const n of state.neurons) {
+    const d = Math.hypot(n.x-wx, n.y-wy);
+    if (d < C.NEURON_RADIUS+14 && d < bd) { bd=d; best=n; }
+  }
+  return best;
+}
+function canAfford(type) {
+  const c=C.COSTS[type];
+  return c && state.energy>=c.energy && state.biomass>=c.biomass && state.knowledge>=(c.knowledge||0);
+}
+function unlocked(type) {
+  const ns=state.neurons.length, sy=state.synapses.length;
+  const has = t => state.neurons.some(n=>n.type===t);
+  switch(type){
+    // Tier 1
+    case 'SOMA':        return true;
+    case 'RELAY':       return ns>=1;
+    case 'INHIBITOR':   return has('SOMA') && has('RELAY') && sy>=1;
+    case 'SENSOR':      return ns>=3 && sy>=2;
+    case 'HARVESTER':   return ns>=4 && has('RELAY');
+    // Tier 2
+    case 'GLIA':        return ns>=5 && has('INHIBITOR');
+    case 'STABILIZER':  return state.ignitions>=1 && ns>=6;
+    case 'AMPLIFIER':   return ns>=6;
+    // Tier 3
+    case 'OSCILLATOR':  return has('HARVESTER') && has('INHIBITOR');
+    case 'MEMORY':      return has('OSCILLATOR') && sy>=4;
+    case 'PLASTICITY':  return state.ignitions>=2 && has('GLIA');
+    // Tier 4
+    case 'ATTENTION':   return has('MEMORY') && has('OSCILLATOR');
+    case 'COORDINATOR': return has('ATTENTION') && ns>=8;
+    // Tier 5
+    case 'RESEARCH':    return has('COORDINATOR') && state.knowledge>=15;
+    default:            return false;
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 5 — FACTORIES
+// ══════════════════════════════════════════════════════════════
+function makeNeuron(type, x, y) {
+  const fi = {
+    SOMA:0, RELAY:1.8, INHIBITOR:0, SENSOR:2.6, HARVESTER:4.0,
+    GLIA:0, STABILIZER:0, AMPLIFIER:1.2,
+    OSCILLATOR:0, MEMORY:0, PLASTICITY:0,
+    ATTENTION:2.2, COORDINATOR:1.6, RESEARCH:0
+  };
+  // SOMA fires via auto-interval in tickFast based on level
+  return {id:uid++, type, x, y, level:1, activity:0, heat:0,
+          fireTimer:0, fireInterval:fi[type]??2.5, age:0, sigsFired:0,
+          pulsePhase:Math.random()*Math.PI*2, birthTime:state.time,
+          oscFreq: 0.4+Math.random()*0.4,   // OSCILLATOR rhythm Hz
+          memPattern: 0,                      // MEMORY stored activation
+          plasWeight: 1.0 };                  // PLASTICITY synapse modifier
+}
+function makeSynapse(srcId, dstId) {
+  return {id:uid++, src:srcId, dst:dstId, weight:1, age:0, myelinated:false};
+}
+function makeSignal(synId, srcType) {
+  return {id:uid++, synId, t:0, speed:0.35+Math.random()*0.25, srcType:srcType||'SOMA'};
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 6 — GAME ACTIONS
+// ══════════════════════════════════════════════════════════════
+function placeNeuron(type, wx, wy) {
+  // Tutorial override: types in the current step's tutAllowed bypass game unlock check
+  const curTutStep = !tutDone && TUTORIAL_STEPS[tutStep];
+  const isTutAllowed = curTutStep && curTutStep.tutAllowed && curTutStep.tutAllowed.has(type);
+  if (!isTutAllowed && !unlocked(type)) { showToast('Not unlocked yet'); return null; }
+  if (!canAfford(type)){ showToast('Insufficient resources'); return null; }
+  const c = C.COSTS[type];
+  state.energy  -= c.energy;
+  state.biomass -= c.biomass;
+  const n = makeNeuron(type, wx, wy);
+  state.neurons.push(n);
+  sndPlace();
+  spawnParticle(wx, wy, 'place');
+  advanceTutorial(type);
+  narrate({
+    SOMA:'soma', RELAY:'relay', INHIBITOR:'inh', HARVESTER:'harv',
+    GLIA:'glia', STABILIZER:'stab', AMPLIFIER:'amp',
+    OSCILLATOR:'osc', MEMORY:'mem', PLASTICITY:'plas',
+    ATTENTION:'attn', COORDINATOR:'coord', RESEARCH:'research'
+  }[type]||'placed');
+  return n;
+}
+
+function connectNeurons(srcId, dstId) {
+  if (srcId === dstId) return false;
+  if (state.synapses.some(s=>s.src===srcId&&s.dst===dstId)) { showToast('Already connected'); return false; }
+  state.synapses.push(makeSynapse(srcId, dstId));
+  sndConnect();
+  advanceTutorial('synapse');
+  const dst = gn(dstId);
+  if (dst && dst.type === 'INHIBITOR') advanceTutorial('synapse_inh');
+  narrate('syn');
+  return true;
+}
+
+function removeNeuron(id) {
+  const n = gn(id);
+  if (n && state.resEffects?.biomassRecycle > 0) {
+    const refund = (C.COSTS[n.type]?.biomass || 0) * state.resEffects.biomassRecycle;
+    state.biomass += refund;
+  }
+  const deadSynIds = new Set(state.synapses.filter(s=>s.src===id||s.dst===id).map(s=>s.id));
+  state.neurons  = state.neurons.filter(n=>n.id!==id);
+  state.synapses = state.synapses.filter(s=>!deadSynIds.has(s.id));
+  state.signals  = state.signals.filter(sg=>!deadSynIds.has(sg.synId));
+  if (state.selected===id) closeSheet();
+}
+
+function upgradeNeuron(id) {
+  const n = gn(id);
+  if (!n) return false;
+  if (n.level >= 5) { showToast('Maximum level reached'); return false; }
+  const costE  = C.UPGRADE_COSTS[n.level-1];
+  const costKN = C.UPGRADE_KN_COSTS[n.level-1] || 0;
+  if (state.energy < costE)    { showToast('Not enough energy'); return false; }
+  if (state.knowledge < costKN){ showToast(`Need ${costKN} Knowledge`); return false; }
+  state.energy    -= costE;
+  state.knowledge -= costKN;
+  n.level++;
+  sndUpgrade();
+  narrate('upg');
+  if (n.level===4) showToast(`${n.type} L4 — Advanced unlocked`);
+  if (n.level===5) showToast(`${n.type} L5 — Peak efficiency`);
+  return true;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 6b — SAVE / LOAD SYSTEM
+// ══════════════════════════════════════════════════════════════
+const SAVE_KEY = 'nc_save_v4';
+
+function saveGame(silent=false) {
+  try {
+    const data = {
+      uid,
+      tutStep, tutDone,
+      s: {
+        energy:state.energy, biomass:state.biomass, stability:state.stability,
+        knowledge:state.knowledge, dopamine:state.dopamine,
+        heat:state.heat, noise:state.noise, coherence:state.coherence,
+        phi:state.phi, phase:state.phase, ignitions:state.ignitions,
+        time:state.time
+      },
+      neurons:    state.neurons.map(n=>({...n})),
+      synapses:   state.synapses.map(s=>({...s})),
+      researched: [...(state.researched||[])],
+      completedMissions: [...(state.completedMissions||[])]
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    if (!silent) narrate('saved');
+  } catch(e) { console.warn('Save failed', e); }
+}
+
+function loadGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    uid      = data.uid     || 1;
+    tutStep  = data.tutStep ?? 0;
+    tutDone  = data.tutDone ?? false;
+    const s  = data.s || {};
+    state.energy        = s.energy       ?? C.ENERGY_START;
+    state.biomass       = s.biomass      ?? C.BIOMASS_START;
+    state.stability     = s.stability    ?? C.STABILITY_START;
+    state.knowledge     = s.knowledge    ?? 0;
+    state.dopamine      = s.dopamine     ?? 0;
+    state.heat          = s.heat         ?? 0;
+    state.noise         = s.noise        ?? 0.05;
+    state.coherence     = s.coherence    ?? 0;
+    state.phi           = s.phi          ?? 0;
+    state.phase         = s.phase        ?? 1;
+    state.ignitions     = s.ignitions    ?? 0;
+    state.time          = s.time         ?? 0;
+    state.neurons       = (data.neurons  || []).map(n=>({...n}));
+    state.synapses      = (data.synapses || []).map(s=>({...s}));
+    state.signals       = [];
+    state.selected      = null;
+    state.connectMode   = null;
+    state.gameOver      = false;
+    state.started       = true;
+    state.sigCount      = 0;
+    state.sigTimer      = 0;
+    state.signalsPerSec = 0;
+    state.eegHistory    = [];
+    state.heatWarned    = false;
+    state.stabWarned    = false;
+    // Research
+    state.researched = new Set(data.researched || []);
+    state.resEffects = {
+      synapseSpeedMult:1.0, heatDecayMult:1.0, signalEnergyBonus:0.18,
+      phiResonance:false, biomassRecycle:0.0, coalitionBonus:1.4,
+      memoryDepth:1, maxSynapseWeight:2.5
+    };
+    applyResearchEffects();
+    // Missions
+    state.completedMissions = new Set(data.completedMissions || []);
+    state.equilTimer = 0;
+    if (state.completedMissions.has('stable_zone')) showHeatmapBtn();
+    if (state.completedMissions.has('six_neurons')) showMinimap();
+    if (state.completedMissions.has('first_ignition')) {
+      const daEl = document.getElementById('hud-dopamine');
+      if (daEl) daEl.style.display = 'flex';
+    }
+    return true;
+  } catch(e) { console.warn('Load failed', e); return false; }
+}
+
+function hasSave() {
+  try { return !!localStorage.getItem(SAVE_KEY); } catch(e) { return false; }
+}
+
+function deleteSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+}
+
+// Autosave every AUTOSAVE_MS
+let autosaveTimer = null;
+function startAutosave() {
+  clearInterval(autosaveTimer);
+  autosaveTimer = setInterval(()=>{ if(state.started && !state.gameOver) saveGame(true); }, C.AUTOSAVE_MS);
+}
+
+
+
+function fireNeuron(id) {
+  const n = gn(id); if (!n) return;
+  for (const syn of state.synapses.filter(s=>s.src===id)) {
+    if (state.signals.filter(sg=>sg.synId===syn.id).length < 3) {
+      state.signals.push(makeSignal(syn.id, n.type));
+      n.sigsFired++;
+    }
+  }
+}
+
+function tickFast(dt) {
+  if (state.gameOver) return;
+  state.time += dt;
+  state.sigTimer += dt;
+  if (state.sigTimer >= 1) {
+    state.signalsPerSec = state.sigCount;
+    state.sigCount = 0; state.sigTimer = 0;
+  }
+
+  const heatRates = {
+    SOMA:0.0022, RELAY:0.0013, INHIBITOR:0.0005, SENSOR:0.0016, HARVESTER:0.0009,
+    GLIA:0.0004, STABILIZER:0.0006, AMPLIFIER:0.0045,
+    OSCILLATOR:0.0030, MEMORY:0.0008, PLASTICITY:0.0010,
+    ATTENTION:0.0015, COORDINATOR:0.0012, RESEARCH:0.0005
+  };
+  const passiveTypes = new Set(['GLIA','STABILIZER','INHIBITOR','MEMORY','PLASTICITY','RESEARCH']);
+
+  for (const n of state.neurons) {
+    n.age += dt;
+    n.fireTimer += dt;
+    const actF = 0.4 + n.activity*0.6;
+    n.heat += (heatRates[n.type]||0.001) * actF * dt;
+    n.heat -= 0.0016 * (state.resEffects?.heatDecayMult ?? 1.0) * dt;
+    n.heat = clamp(n.heat, 0, 1);
+    n.activity = 0.3 + 0.7*Math.abs(Math.sin(state.time*1.1 + n.pulsePhase));
+
+    if (passiveTypes.has(n.type)) continue;
+
+    // SOMA: fire interval scales with level
+    if (n.type === 'SOMA') {
+      const interval = Math.max(0.6, 2.2 - (n.level-1)*0.35);
+      if (n.fireTimer >= interval) { n.fireTimer=0; fireNeuron(n.id); }
+      continue;
+    }
+
+    // OSCILLATOR: fires at its own rhythm frequency
+    if (n.type === 'OSCILLATOR') {
+      const period = 1 / (n.oscFreq * (1 + (n.level-1)*0.3));
+      if (n.fireTimer >= period) {
+        n.fireTimer = 0;
+        fireNeuron(n.id);
+        // Synchronise nearby neurons (pull their fire timer toward phase)
+        for (const nb of state.neurons) {
+          if (nb.id===n.id || passiveTypes.has(nb.type)) continue;
+          const d = Math.hypot(nb.x-n.x, nb.y-n.y);
+          if (d < 150) nb.fireTimer = lerp(nb.fireTimer, 0, 0.18*n.level);
+        }
+      }
+      continue;
+    }
+
+    // ATTENTION: fires and doubles signal speed on its outgoing synapses
+    if (n.type === 'ATTENTION') {
+      if (n.fireTimer >= n.fireInterval) {
+        n.fireTimer = 0;
+        fireNeuron(n.id);
+        // Boost signal speed on all outbound synapses for this tick
+        for (const syn of state.synapses.filter(s=>s.src===n.id)) {
+          for (const sig of state.signals.filter(sg=>sg.synId===syn.id)) {
+            sig.speed = Math.min(1.2, sig.speed * 1.5);
+          }
+        }
+      }
+      continue;
+    }
+
+    // COORDINATOR: fires and resets all coalition neurons toward sync
+    if (n.type === 'COORDINATOR') {
+      if (n.fireTimer >= n.fireInterval) {
+        n.fireTimer = 0;
+        fireNeuron(n.id);
+        // Nudge all neurons in same coalition to fire together
+        for (const nb of state.neurons) {
+          if (nb.id===n.id || passiveTypes.has(nb.type)) continue;
+          nb.fireTimer = lerp(nb.fireTimer, 0, 0.35*n.level);
+        }
+      }
+      continue;
+    }
+
+    // AMPLIFIER: double-fires
+    if (n.type === 'AMPLIFIER') {
+      if (n.fireTimer >= n.fireInterval) {
+        n.fireTimer = 0;
+        fireNeuron(n.id); fireNeuron(n.id);
+        if (n.level >= 2) fireNeuron(n.id);
+      }
+      continue;
+    }
+
+    // Default: RELAY, SENSOR, HARVESTER
+    if (n.fireTimer >= n.fireInterval) {
+      n.fireTimer = 0;
+      fireNeuron(n.id);
+    }
+  }
+
+  // Myelination (synapses speed up after 30s)
+  for (const syn of state.synapses) {
+    syn.age += dt;
+    if (!syn.myelinated && syn.age > 30) syn.myelinated = true;
+  }
+
+  // Move signals
+  for (let i = state.signals.length-1; i >= 0; i--) {
+    const sig = state.signals[i];
+    const syn = gs(sig.synId);
+    if (!syn) { state.signals.splice(i,1); continue; }
+    sig.t += sig.speed * (syn.myelinated ? 1.45 : 1.0) * (state.resEffects?.synapseSpeedMult ?? 1.0) * dt;
+    if (sig.t >= 1) {
+      state.signals.splice(i,1);
+      const dst = gn(syn.dst);
+      if (dst) {
+        state.energy += state.resEffects?.signalEnergyBonus ?? 0.18;
+        state.sigCount++;
+        switch(dst.type) {
+          case 'INHIBITOR': dst.heat = Math.max(0, dst.heat-0.04); break;
+          case 'GLIA':      dst.heat = Math.max(0, dst.heat-0.02); break;
+          case 'AMPLIFIER': fireNeuron(dst.id); fireNeuron(dst.id); if(dst.level>=3) fireNeuron(dst.id); break;
+          case 'MEMORY':    dst.memPattern = clamp(dst.memPattern + 0.12*dst.level*(state.resEffects?.memoryDepth??1), 0, 1); break;
+          case 'PLASTICITY':
+            const maxW = state.resEffects?.maxSynapseWeight ?? 2.5;
+            for (const s of state.synapses.filter(s=>s.src===dst.id||s.dst===dst.id))
+              s.weight = Math.min(maxW, s.weight + 0.04*dst.level);
+            break;
+          case 'RESEARCH':  state.knowledge += 0.08*dst.level; break;
+          default:          fireNeuron(dst.id);
+        }
+        if (Math.random() < 0.06) sndSignal();
+      }
+    }
+  }
+}
+
+function tickSlow() {
+  if (state.gameOver) return;
+  const dt = 1.0;
+
+  // ── Energy income
+  let eIncome = 0;
+  for (const n of state.neurons) {
+    if (n.type==='SOMA')      eIncome += 0.5 + (n.level-1)*0.38;
+    if (n.type==='HARVESTER') eIncome += 0.22 * n.level;
+    if (n.type==='SENSOR')    eIncome += state.coherence * 0.07;
+  }
+  const minE = 0.5 + state.phase*0.3;  // anti-stall scales with phase
+  if (eIncome < minE) eIncome = minE;
+  state.energy += eIncome * dt;
+
+  // ── Biomass income
+  let bIncome = 0;
+  for (const n of state.neurons) {
+    if (n.type==='HARVESTER') bIncome += 0.38 + (n.level-1)*0.22;
+  }
+  if (state.neurons.length > 2) bIncome += 0.06*(state.neurons.length-2);
+  state.biomass += bIncome * dt;
+
+  // ── Inhibitor drain
+  for (const n of state.neurons)
+    if (n.type==='INHIBITOR') state.energy -= 0.04*n.level*dt;
+
+  // ── Global heat (FIX: was never computed, HUD always showed 0)
+  state.heat = state.neurons.length > 0
+    ? state.neurons.reduce((s,n)=>s+n.heat, 0) / state.neurons.length
+    : 0;
+
+  // ── GLIA proximity cooling
+  for (const glia of state.neurons.filter(n=>n.type==='GLIA'))
+    for (const n of state.neurons) {
+      const d = Math.hypot(n.x-glia.x, n.y-glia.y);
+      if (d < 100) {
+        n.heat = Math.max(0, n.heat - 0.006*glia.level*dt);
+        // Spawn healing particle occasionally
+        if (Math.random() < 0.08 * dt) spawnParticle(
+          glia.x + (n.x-glia.x)*0.3,
+          glia.y + (n.y-glia.y)*0.3,
+          'glia_heal'
+        );
+      }
+    }
+
+  // ── Inhibitor proximity cooling
+  for (const inh of state.neurons.filter(n=>n.type==='INHIBITOR'))
+    for (const n of state.neurons) {
+      const d = Math.hypot(n.x-inh.x, n.y-inh.y);
+      if (d < 190) n.heat = Math.max(0, n.heat - 0.003*inh.level*dt);
+    }
+
+  // ── Stability
+  state.stability -= state.neurons.length * 0.018 * dt;
+  if (state.heat > 0.5) state.stability -= (state.heat-0.5)*0.42*dt;
+  state.stability += 0.62 * dt;
+  for (const n of state.neurons) {
+    if (n.type==='INHIBITOR')  state.stability += 0.12*n.level*dt;
+    if (n.type==='GLIA')       state.stability += 0.05*n.level*dt;
+    if (n.type==='STABILIZER') state.stability += 0.08*n.level*dt;
+    if (n.type==='PLASTICITY') state.stability += 0.04*n.level*dt;
+    if (n.type==='MEMORY' && n.memPattern > 0.6) state.stability += 0.03*n.level*dt;
+  }
+  state.stability -= state.noise*state.noise*0.08*dt;
+  state.stability = clamp(state.stability, 0, 100);
+
+  // ── Knowledge (from SENSOR, MEMORY, RESEARCH)
+  for (const n of state.neurons) {
+    if (n.type==='SENSOR')   state.knowledge += 0.04*n.level*dt;
+    if (n.type==='RESEARCH') state.knowledge += 0.22*n.level*dt;
+    if (n.type==='MEMORY' && n.memPattern>0.5) state.knowledge += 0.03*n.level*dt;
+  }
+  state.knowledge = clamp(state.knowledge, 0, 999);
+
+  // ── Dopamine (rises after ignitions, decays over time)
+  if (state.ignitions > 0) state.dopamine = clamp(state.dopamine + 0.02*dt, 0, 1);
+  state.dopamine = clamp(state.dopamine - 0.008*dt, 0, 1);
+
+  // ── Noise (FIX: was monotonically increasing — now decays with stability)
+  const noiseGrow  = 0.0020 * dt;
+  const noiseDecay = 0.0042 * (state.stability/100) * dt;
+  state.noise = clamp(state.noise + noiseGrow - noiseDecay, 0.02, 1.0);
+
+  // ── Coalition Detection (simple connected-component analysis)
+  // A coalition = group of neurons connected by synapses, used to weight Phi
+  function buildCoalitions() {
+    const adj = new Map();
+    for (const n of state.neurons) adj.set(n.id, []);
+    for (const syn of state.synapses) {
+      adj.get(syn.src)?.push(syn.dst);
+      adj.get(syn.dst)?.push(syn.src);
+    }
+    const visited = new Set();
+    const coalitions = [];
+    for (const n of state.neurons) {
+      if (visited.has(n.id)) continue;
+      const comp = []; const stack = [n.id];
+      while (stack.length) {
+        const id = stack.pop();
+        if (visited.has(id)) continue;
+        visited.add(id); comp.push(id);
+        for (const nb of (adj.get(id)||[])) if (!visited.has(nb)) stack.push(nb);
+      }
+      if (comp.length >= 2) coalitions.push(comp);
+    }
+    return coalitions;
+  }
+
+  const coalitions  = buildCoalitions();
+  state.coalitionCount = coalitions.length;
+  const largestSize    = coalitions.reduce((m,c)=>Math.max(m,c.length),0);
+
+  // ── Coherence: weighted by coalition structure + synapse maturity
+  if (state.synapses.length > 0) {
+    const avgWeight    = state.synapses.reduce((a,s)=>a+(s.weight||1),0) / state.synapses.length;
+    const coalFactor   = Math.min(1, largestSize / Math.max(1, state.neurons.length));
+    const target = Math.min(1, state.synapses.length*0.07 + state.signalsPerSec*0.025) * coalFactor * Math.min(1.5, avgWeight);
+    state.coherence = lerp(state.coherence, target, 0.12);
+  } else {
+    state.coherence = lerp(state.coherence, 0, 0.05);
+  }
+
+  // ── Phi accumulation (gated on ignitions + coherent coalition)
+  if (state.ignitions > 0 && state.synapses.length >= 2 && largestSize >= 2) {
+    const coalitionBonus = state.resEffects?.coalitionBonus ?? 1.4;
+    const qualityBonus   = largestSize >= 5 ? coalitionBonus : largestSize >= 3 ? 1.15 : 1.0;
+    const coordMult = state.neurons.filter(n=>n.type==='COORDINATOR').reduce((a,n)=>a + 0.12*n.level, 1.0);
+    const attnMult  = state.neurons.filter(n=>n.type==='ATTENTION').reduce((a,n)=>a + 0.08*n.level, 1.0);
+    let phiMult = 1.0;
+    if (state.resEffects?.phiResonance && state.coherence > 0.5) phiMult = 1.3;
+    state.phi += (state.coherence * 2.2 + state.signalsPerSec * 0.45 * attnMult) * qualityBonus * coordMult * phiMult * dt;
+  }
+
+  // ── Phase locking: OSCILLATOR neurons contribute to global phase lock
+  const oscNeurons = state.neurons.filter(n => n.type === 'OSCILLATOR');
+  if (oscNeurons.length > 0) {
+    // Phase lock = how many OSCILLATORs are near-synchronized (close oscFreq)
+    let lockCount = 0;
+    for (let i = 0; i < oscNeurons.length; i++) {
+      for (let j = i + 1; j < oscNeurons.length; j++) {
+        if (Math.abs(oscNeurons[i].oscFreq - oscNeurons[j].oscFreq) < 0.12) lockCount++;
+      }
+    }
+    const maxPairs = oscNeurons.length * (oscNeurons.length - 1) / 2 || 1;
+    const targetLock = Math.min(1, oscNeurons.length * 0.25 + lockCount / maxPairs * 0.5);
+    state.phaseLock = lerp(state.phaseLock, targetLock, 0.1);
+    // Phase lock boosts coherence
+    state.coherence = clamp(state.coherence + state.phaseLock * 0.015, 0, 1);
+  } else {
+    state.phaseLock = lerp(state.phaseLock, 0, 0.05);
+  }
+
+  // ── Delta mode: slow synchronized state (high coherence + low noise + MEMORY)
+  const hasMem = state.neurons.some(n => n.type === 'MEMORY');
+  const inDelta = hasMem && state.coherence > 0.55 && state.noise < 0.35 && state.phaseLock > 0.3;
+  if (inDelta) {
+    state.deltaModeTimer += 1;
+    if (state.deltaModeTimer > 5) state.deltaMode = true;
+    // Delta boosts knowledge trickle
+    state.knowledge += 0.06 * state.phaseLock;
+  } else {
+    state.deltaModeTimer = Math.max(0, state.deltaModeTimer - 1);
+    if (state.deltaModeTimer === 0) state.deltaMode = false;
+  }
+
+  // ── MEMORY Engram burst (periodic knowledge/dopamine spike when pattern high)
+  if (state.engramCooldown > 0) state.engramCooldown -= 1;
+  for (const n of state.neurons.filter(n2 => n2.type === 'MEMORY')) {
+    if (n.memPattern > 0.75 && state.engramCooldown === 0) {
+      state.engramCooldown = 18 + Math.floor(Math.random() * 12); // 18-30s cooldown
+      state.knowledge += 3 + n.level * 2;
+      state.dopamine  = clamp(state.dopamine + 0.15, 0, 1);
+      spawnParticle(n.x, n.y, 'engram');
+      // Decay pattern after burst
+      n.memPattern = Math.max(0, n.memPattern - 0.4);
+      narrate('mem');
+      break; // one burst per second max
+    }
+  }
+
+  // ── Cluster quality detection (every 5s via a simple timer)
+  if (Math.floor(state.time) % 5 === 0) detectClusters();
+
+  // ── Consciousness approach VFX
+  state.consciousnessApproach = clamp((state.phi - C.WIN_PHI * 0.85) / (C.WIN_PHI * 0.15), 0, 1);
+
+  // ── Network age
+  state.networkAge = state.time / 60;
+
+  // ── EEG history
+  const avgAct = state.neurons.length > 0
+    ? state.neurons.reduce((s,n)=>s+n.activity,0)/state.neurons.length : 0;
+  state.eegHistory.push(avgAct);
+  if (state.eegHistory.length > 80) state.eegHistory.shift();
+
+  // ── Warnings
+  if (!state.heatWarned && state.heat > 0.62)  { state.heatWarned=true; narrate('heat_warn'); }
+  if (state.heat < 0.4) state.heatWarned = false;
+  if (!state.stabWarned && state.stability < 32){ state.stabWarned=true; narrate('stab_warn'); }
+  if (state.stability > 55) state.stabWarned = false;
+
+  // ── Ignition check
+  checkIgnition();
+
+  // ── Phase check
+  checkPhase();
+
+  // ── Mission check
+  checkMissions();
+  tickEquilTimer(1.0);
+
+  // ── Explain system
+  tickExplain(1.0);
+
+  // ── Win check
+  if (state.phi >= C.WIN_PHI && !state.gameOver) triggerWin();
+
+  // ── Clamp
+  state.energy  = clamp(state.energy,  0, 999);
+  state.biomass = clamp(state.biomass, 0, 999);
+
+  // ── Collapse
+  if (state.stability <= 0 && state.neurons.length >= 4) triggerCollapse();
+
+  updateHUD();
+}
+
+function checkIgnition() {
+  if (state.neurons.length < 3 || state.synapses.length < 2 || state.stability < 28) return;
+  if ((state.coalitionCount||0) < 1) return;  // needs at least one connected pair
+  const stabilityBonus = state.stability > 70 ? 1.25 : 1.0;
+  const prob = state.coherence * 0.3 * stabilityBonus;
+  if (Math.random() < prob * 0.016) triggerIgnition();
+}
+
+function triggerIgnition() {
+  state.ignitions++;
+  state.phi    += C.PHI_PER_IGNITION;
+  state.energy += 12;
+  state.dopamine = clamp(state.dopamine + 0.35, 0, 1);  // Dopamin-Spike
+  doIgnitionFX();
+  sndIgnition();
+  narrate(state.ignitions===1?'ign':state.ignitions===2?'ign2':'ignmore');
+  advanceTutorial('ignition');
+  // Spawn shockwave from each neuron in the network
+  for (const n of state.neurons) {
+    spawnIgnitionShockwave(n.x, n.y);
+    spawnParticle(n.x, n.y, 'ignition');
+  }
+  // Show dopamine display after first ignition
+  if (state.ignitions === 1) {
+    const daEl = document.getElementById('hud-dopamine');
+    if (daEl) daEl.style.display = 'flex';
+  }
+}
+
+function triggerCollapse() {
+  narrate('collapse');
+  if (state.neurons.length > 1)
+    removeNeuron(state.neurons[Math.floor(Math.random()*state.neurons.length)].id);
+  state.stability = 44;
+  playNote(180, 0.4, 0.12, 'sawtooth');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 7b — MISSION SYSTEM
+// ══════════════════════════════════════════════════════════════
+const MISSIONS = [
+  { id:'first_soma',    name:'Das erste Leben',       phase:1,
+    check:()=> state.neurons.some(n=>n.type==='SOMA'),
+    reward:{ energy:20 },
+    rewardText:'+20 µV' },
+  { id:'first_syn',     name:'Erste Verbindung',      phase:1,
+    check:()=> state.synapses.length >= 1,
+    reward:{ energy:30 },
+    rewardText:'+30 µV · RELAY freigeschaltet' },
+  { id:'relay_built',   name:'Das Rückgrat',          phase:2,
+    check:()=> state.neurons.some(n=>n.type==='RELAY') && state.synapses.length >= 2,
+    reward:{ energy:25, biomass:10 },
+    rewardText:'+25 µV · +10 BM' },
+  { id:'cool_net',      name:'Kühl bleiben',          phase:3,
+    check:()=> state.neurons.some(n=>n.type==='INHIBITOR') && state.stability > 80,
+    reward:{ energy:40 },
+    rewardText:'+40 µV · Health-Monitor freigeschaltet' },
+  { id:'equilibrium',   name:'Gleichgewicht',         phase:3,
+    check:()=> state.equilTimer >= 60 && state.stability > 90,
+    reward:{ biomass:15 },
+    rewardText:'+15 BM' },
+  { id:'coalition',     name:'Koordination',          phase:4,
+    check:()=> state.coherence >= 0.3,
+    reward:{ energy:30 },
+    rewardText:'+30 µV · Ignition-UI sichtbar' },
+  { id:'first_ignition',name:'Erster Blitz',          phase:4,
+    check:()=> state.ignitions >= 1,
+    reward:{ energy:50, biomass:20, knowledge:5 },
+    rewardText:'+50 µV · +20 BM · +5 Knowledge' },
+  { id:'six_neurons',   name:'Wachstum',              phase:5,
+    check:()=> state.neurons.length >= 6,
+    reward:{ biomass:20 },
+    rewardText:'+20 BM · Minimap freigeschaltet' },
+  { id:'harvester',     name:'Ernte',                 phase:5,
+    check:()=> state.neurons.some(n=>n.type==='HARVESTER'),
+    reward:{ biomass:10 },
+    rewardText:'+10 BM' },
+  { id:'glia_care',     name:'Pflege',                phase:6,
+    check:()=> state.neurons.some(n=>n.type==='GLIA') && state.heat < 0.3,
+    reward:{ biomass:15 },
+    rewardText:'+15 BM' },
+  { id:'stable_zone',   name:'Stabile Zone',          phase:6,
+    check:()=> ['SOMA','RELAY','INHIBITOR','GLIA'].every(t=>state.neurons.some(n=>n.type===t)),
+    reward:{ energy:30 },
+    rewardText:'+30 µV · Heatmap freigeschaltet' },
+  { id:'osc_waves',     name:'Erste Wellen',          phase:7,
+    check:()=> state.neurons.some(n=>n.type==='OSCILLATOR'),
+    reward:{ energy:20 },
+    rewardText:'+20 µV · EEG-Panel aktiv' },
+  { id:'memory_kn',     name:'Erinnerung',            phase:7,
+    check:()=> state.neurons.some(n=>n.type==='MEMORY') && state.knowledge >= 10,
+    reward:{ knowledge:10 },
+    rewardText:'+10 Knowledge · COORDINATOR angedeutet' },
+  { id:'two_hours',     name:'Zwei Stunden Erwachen', phase:8,
+    check:()=> state.time >= 7200 && state.neurons.length >= 8,
+    reward:{ energy:100, biomass:50 },
+    rewardText:'+100 µV · +50 BM · Phase 2 unlocked' },
+];
+
+let missionToastTimer = null;
+
+function checkMissions() {
+  for (const m of MISSIONS) {
+    if (state.completedMissions.has(m.id)) continue;
+    if (m.check()) {
+      completeMission(m);
+    }
+  }
+}
+
+function completeMission(m) {
+  state.completedMissions.add(m.id);
+  // Apply reward
+  if (m.reward.energy)    state.energy    = clamp(state.energy    + m.reward.energy,    0, 999);
+  if (m.reward.biomass)   state.biomass   = clamp(state.biomass   + m.reward.biomass,   0, 999);
+  if (m.reward.knowledge) state.knowledge = clamp(state.knowledge + m.reward.knowledge, 0, 999);
+
+  // Special unlocks
+  if (m.id === 'stable_zone') showHeatmapBtn();
+  if (m.id === 'six_neurons') showMinimap();
+
+  showMissionToast(m.name, m.rewardText);
+  updateHUD();
+}
+
+function showMissionToast(name, rewardText) {
+  const toast = document.getElementById('mission-toast');
+  document.getElementById('mt-name').textContent    = name;
+  document.getElementById('mt-reward').textContent  = rewardText;
+  toast.classList.add('visible');
+  clearTimeout(missionToastTimer);
+  missionToastTimer = setTimeout(()=> toast.classList.remove('visible'), 3800);
+}
+
+function showHeatmapBtn() {
+  const btn = document.getElementById('heatmap-btn');
+  if (btn) btn.style.display = '';
+}
+
+// ── Equilibrium timer tracking (Stability > 90) ──────────────
+function tickEquilTimer(dt) {
+  if (state.stability > 90) state.equilTimer += dt;
+  else state.equilTimer = Math.max(0, state.equilTimer - dt * 0.5);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 7c — EXPLAIN / DIAGNOSE SYSTEM
+// ══════════════════════════════════════════════════════════════
+let explainTimer = null, explainCooldown = 0;
+
+const EXPLAIN_RULES = [
+  { id:'heat_crit',   check:()=> state.heat > 0.75,
+    body:'Kritische Überhitzung! Neuronen beschädigen das Netz.',
+    action:'→ INHIBITOR neben heißen Knoten platzieren. GLIA hilft langfristig.' },
+  { id:'stab_low',    check:()=> state.stability < 30,
+    body:'Stabilitätsverlust! Das Netz ist gefährdet.',
+    action:'→ INHIBITOR oder GLIA einsetzen. Signalketten überprüfen.' },
+  { id:'energy_low',  check:()=> state.energy < 20,
+    body:'Energiedefizit. Keine neuen Neuronen platzierbar.',
+    action:'→ Weiteres SOMA platzieren oder Neuronen entfernen.' },
+  { id:'no_income',   check:()=> state.neurons.length >= 3 && !state.neurons.some(n=>n.type==='HARVESTER') && state.biomass < 10,
+    body:'Biomasse erschöpft. Wachstum blockiert.',
+    action:'→ HARVESTER platzieren für Biomasse-Produktion.' },
+  { id:'heat_warn',   check:()=> state.heat > 0.5 && state.heat <= 0.75,
+    body:'Hitzeanstieg erkannt. Netz läuft heiß.',
+    action:'→ INHIBITOR in der Nähe aktiver Cluster platzieren.' },
+  { id:'no_synapse',  check:()=> state.neurons.length >= 2 && state.synapses.length === 0,
+    body:'Keine Synapsen vorhanden. Neuronen sind isoliert.',
+    action:'→ Long-press auf ein Neuron → anderes antippen zum Verbinden.' },
+];
+
+function tickExplain(dt) {
+  if (explainCooldown > 0) { explainCooldown -= dt; return; }
+  const panel = document.getElementById('explain-panel');
+  for (const rule of EXPLAIN_RULES) {
+    if (rule.check()) {
+      document.getElementById('exp-body').textContent   = rule.body;
+      document.getElementById('exp-action').textContent = rule.action;
+      panel.classList.add('visible');
+      // Auto-hide after 6s
+      clearTimeout(explainTimer);
+      explainTimer = setTimeout(()=> panel.classList.remove('visible'), 6000);
+      explainCooldown = 12; // don't re-trigger for 12s
+      return;
+    }
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 7d — HEATMAP OVERLAY
+// ══════════════════════════════════════════════════════════════
+function drawHeatmapOverlay() {
+  if (!state.heatmapOn || !state.neurons.length) return;
+  const resolution = 28;
+  const cellW = GW / resolution;
+  const cellH = GH / resolution;
+
+  for (let cx = 0; cx < resolution; cx++) {
+    for (let cy = 0; cy < resolution; cy++) {
+      const sx = (cx + 0.5) * cellW;
+      const sy = (cy + 0.5) * cellH;
+      const wp = s2w(sx, sy);
+      let heat = 0;
+      for (const n of state.neurons) {
+        const d = Math.hypot(n.x - wp.x, n.y - wp.y);
+        if (d < 160) heat += n.heat * (1 - d/160) * n.level;
+      }
+      heat = clamp(heat, 0, 1);
+      if (heat < 0.04) continue;
+
+      // Cool=blue, warm=yellow, hot=red
+      let r, g, b;
+      if (heat < 0.3) { r=0; g=Math.round(100*heat/0.3); b=200; }
+      else if (heat < 0.6) { const t=(heat-0.3)/0.3; r=Math.round(220*t); g=Math.round(100+100*(1-t)); b=Math.round(200*(1-t)); }
+      else { r=220; g=Math.round(80*(1-(heat-0.6)/0.4)); b=0; }
+
+      gctx.fillStyle = `rgba(${r},${g},${b},${0.18 * heat})`;
+      gctx.fillRect(cx*cellW, cy*cellH, cellW+1, cellH+1);
+    }
+  }
+
+  // Heat rings around each neuron
+  for (const n of state.neurons) {
+    if (n.heat < 0.15) continue;
+    const s = w2s(n.x, n.y);
+    const r = C.NEURON_RADIUS * cam.zoom * (2 + n.heat * 2);
+    const grd = gctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
+    const alpha = n.heat * 0.35;
+    grd.addColorStop(0, `rgba(255,${Math.round(200*(1-n.heat))},0,${alpha})`);
+    grd.addColorStop(1, 'rgba(255,0,0,0)');
+    gctx.fillStyle = grd;
+    gctx.beginPath(); gctx.arc(s.x, s.y, r, 0, Math.PI*2); gctx.fill();
+  }
+}
+
+function checkPhase() {
+  for (let p = 6; p >= 2; p--) {
+    if (state.phi >= C.PHASE_THRESHOLDS[p] && state.phase < p) {
+      state.phase = p;
+      showPhaseOverlay(C.PHASE_NAMES[p]);
+      updateHUD();
+      if (p === 6) triggerWin();
+      return;
+    }
+  }
+}
+
+function triggerWin() {
+  setTimeout(()=>{
+    state.gameOver = true;
+    const ws = document.getElementById('win-screen');
+    ws.querySelector('.win-phi').textContent = 'Φ = ' + Math.floor(state.phi);
+
+    // Network stats retrospective
+    const statsEl = ws.querySelector('.win-stats');
+    if (statsEl) {
+      const mins = Math.floor(state.time / 60);
+      const secs = Math.floor(state.time % 60);
+      const timeStr = `${mins}:${String(secs).padStart(2,'0')}`;
+      statsEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-family:var(--mono);font-size:10px;color:rgba(0,212,255,0.6);margin-top:16px;">
+          <div>⬡ Neuronen: <span style="color:#00d4ff">${state.neurons.length}</span></div>
+          <div>— Synapsen: <span style="color:#00ff9d">${state.synapses.length}</span></div>
+          <div>⚡ Zündungen: <span style="color:#fbbf24">${state.ignitions}</span></div>
+          <div>◈ Knowledge: <span style="color:#6366f1">${Math.floor(state.knowledge)}</span></div>
+          <div>⏱ Zeit: <span style="color:#a78bfa">${timeStr}</span></div>
+          <div>◯ Kohärenz: <span style="color:#e879f9">${Math.round(state.coherence*100)}%</span></div>
+        </div>`;
+    }
+    ws.classList.add('visible');
+  }, 2500);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 7e — PARTICLE SYSTEM
+// ══════════════════════════════════════════════════════════════
+const MAX_PARTICLES = 180;
+let shockwaves = [];  // ignition shockwave rings
+
+function spawnParticle(wx, wy, type) {
+  if (state.particles.length >= MAX_PARTICLES) return;
+  const configs = {
+    glia_heal:   { r:255, g:215, b:100, life:1.2, speed:18, size:2.5, count:1 },
+    engram:      { r:99,  g:102, b:241, life:1.5, speed:25, size:3,   count:3 },
+    ignition:    { r:251, g:191, b:36,  life:1.0, speed:60, size:4,   count:5 },
+    place:       { r:0,   g:212, b:255, life:0.6, speed:40, size:2,   count:4 },
+    signal_arr:  { r:0,   g:255, b:157, life:0.5, speed:30, size:2,   count:2 },
+  };
+  const cfg = configs[type];
+  if (!cfg) return;
+  for (let i = 0; i < cfg.count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = cfg.speed * (0.5 + Math.random() * 0.8);
+    state.particles.push({
+      wx, wy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      r: cfg.r, g: cfg.g, b: cfg.b,
+      life: cfg.life * (0.7 + Math.random() * 0.6),
+      maxLife: cfg.life,
+      size: cfg.size * (0.6 + Math.random() * 0.8)
+    });
+  }
+}
+
+function tickParticles(dt) {
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.wx  += p.vx * dt;
+    p.wy  += p.vy * dt;
+    p.vx  *= 0.92;
+    p.vy  *= 0.92;
+    p.life -= dt;
+    if (p.life <= 0) state.particles.splice(i, 1);
+  }
+  // Shockwaves
+  for (let i = shockwaves.length - 1; i >= 0; i--) {
+    const sw = shockwaves[i];
+    sw.radius += sw.speed * dt;
+    sw.life   -= dt;
+    if (sw.life <= 0) shockwaves.splice(i, 1);
+  }
+}
+
+function spawnIgnitionShockwave(wx, wy) {
+  shockwaves.push({ wx, wy, radius: 0, speed: 220, life: 1.4, maxLife: 1.4,
+    r:251, g:191, b:36 });
+  shockwaves.push({ wx, wy, radius: 0, speed: 150, life: 1.8, maxLife: 1.8,
+    r:0, g:212, b:255 });
+}
+
+function drawParticles() {
+  for (const p of state.particles) {
+    const s = w2s(p.wx, p.wy);
+    const alpha = clamp(p.life / p.maxLife, 0, 1);
+    const r = Math.max(0.5, p.size * cam.zoom * alpha);
+    const grd = gctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r * 3);
+    grd.addColorStop(0, `rgba(${p.r},${p.g},${p.b},${alpha * 0.9})`);
+    grd.addColorStop(1, `rgba(${p.r},${p.g},${p.b},0)`);
+    gctx.fillStyle = grd;
+    gctx.beginPath(); gctx.arc(s.x, s.y, r * 3, 0, Math.PI * 2); gctx.fill();
+    gctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${alpha})`;
+    gctx.beginPath(); gctx.arc(s.x, s.y, r, 0, Math.PI * 2); gctx.fill();
+  }
+}
+
+function drawShockwaves() {
+  for (const sw of shockwaves) {
+    const s = w2s(sw.wx, sw.wy);
+    const alpha = clamp(sw.life / sw.maxLife, 0, 1) * 0.55;
+    const r = sw.radius * cam.zoom;
+    gctx.strokeStyle = `rgba(${sw.r},${sw.g},${sw.b},${alpha})`;
+    gctx.lineWidth   = 2 * alpha;
+    gctx.beginPath(); gctx.arc(s.x, s.y, r, 0, Math.PI * 2); gctx.stroke();
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 7f — MINIMAP
+// ══════════════════════════════════════════════════════════════
+let minimapVisible = false;
+
+function showMinimap() {
+  const el = document.getElementById('minimap');
+  if (el && !minimapVisible) {
+    minimapVisible = true;
+    el.style.display = 'block';
+    el.style.opacity = '0';
+    el.style.transition = 'opacity 0.6s ease';
+    setTimeout(()=> el.style.opacity = '1', 50);
+    // Double-tap to center
+    let lastTap = 0;
+    el.addEventListener('click', ()=>{
+      const now = Date.now();
+      if (now - lastTap < 350) {
+        // Re-center camera
+        if (state.neurons.length > 0) {
+          const cx = state.neurons.reduce((s,n)=>s+n.x,0) / state.neurons.length;
+          const cy = state.neurons.reduce((s,n)=>s+n.y,0) / state.neurons.length;
+          cam.x = GW/2 - cx * cam.zoom;
+          cam.y = GH/2 - cy * cam.zoom;
+        }
+      }
+      lastTap = now;
+    });
+  }
+}
+
+function drawMinimap() {
+  if (!minimapVisible || !state.neurons.length) return;
+  const el   = document.getElementById('minimap');
+  const cv   = document.getElementById('minimap-canvas');
+  if (!cv) return;
+  const mw = el.offsetWidth, mh = el.offsetHeight;
+  if (cv.width !== mw)  cv.width  = mw;
+  if (cv.height !== mh) cv.height = mh;
+  const mctx = cv.getContext('2d');
+  mctx.clearRect(0, 0, mw, mh);
+
+  // World bounds
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+  for (const n of state.neurons) {
+    minX=Math.min(minX,n.x); maxX=Math.max(maxX,n.x);
+    minY=Math.min(minY,n.y); maxY=Math.max(maxY,n.y);
+  }
+  const padW = Math.max(120, (maxX-minX)*0.25);
+  const padH = Math.max(80,  (maxY-minY)*0.25);
+  minX -= padW; maxX += padW; minY -= padH; maxY += padH;
+  const scaleX = mw / (maxX - minX);
+  const scaleY = mh / (maxY - minY);
+  const sc = Math.min(scaleX, scaleY);
+  const offX = (mw  - (maxX - minX) * sc) / 2 - minX * sc;
+  const offY = (mh  - (maxY - minY) * sc) / 2 - minY * sc;
+  const toMM = (wx, wy) => ({ x: wx * sc + offX, y: wy * sc + offY });
+
+  // Synapses
+  for (const syn of state.synapses) {
+    const src = gn(syn.src), dst = gn(syn.dst);
+    if (!src || !dst) continue;
+    const s1 = toMM(src.x, src.y), s2 = toMM(dst.x, dst.y);
+    mctx.strokeStyle = 'rgba(0,180,255,0.18)';
+    mctx.lineWidth = 0.8;
+    mctx.beginPath(); mctx.moveTo(s1.x, s1.y); mctx.lineTo(s2.x, s2.y); mctx.stroke();
+  }
+
+  // Neurons
+  for (const n of state.neurons) {
+    const s = toMM(n.x, n.y);
+    const p = PAL[n.type];
+    mctx.fillStyle = colStr(p, 0.85);
+    mctx.beginPath();
+    mctx.arc(s.x, s.y, Math.max(2, 3.5 * n.level * sc * 18), 0, Math.PI * 2);
+    mctx.fill();
+  }
+
+  // Viewport indicator
+  const vpTL = s2w(0, 0), vpBR = s2w(GW, GH);
+  const v1 = toMM(vpTL.x, vpTL.y), v2 = toMM(vpBR.x, vpBR.y);
+  mctx.strokeStyle = 'rgba(0,212,255,0.22)';
+  mctx.lineWidth = 0.8;
+  mctx.strokeRect(v1.x, v1.y, v2.x - v1.x, v2.y - v1.y);
+}
+
+// ── Detect neuron clusters and assess quality ──────────────────────────────
+function detectClusters() {
+  const clusters = [];
+  const visited  = new Set();
+  for (const start of state.neurons) {
+    if (visited.has(start.id)) continue;
+    const group = [], queue = [start];
+    while (queue.length) {
+      const n = queue.shift();
+      if (visited.has(n.id)) continue;
+      visited.add(n.id);
+      group.push(n);
+      for (const nb of state.neurons)
+        if (!visited.has(nb.id) && Math.hypot(nb.x-n.x, nb.y-n.y) < 150) queue.push(nb);
+    }
+    if (group.length < 2) continue;
+    const types = new Set(group.map(n => n.type));
+    let quality = 0.15, label = 'Basis';
+    if (types.has('SOMA') && types.has('RELAY') && types.has('INHIBITOR') && types.has('GLIA')) {
+      quality = 0.9; label = 'Nachhaltig';
+    } else if (types.has('RELAY') && types.has('AMPLIFIER') && types.has('INHIBITOR')) {
+      quality = 0.8; label = 'Ignition';
+    } else if (types.has('OSCILLATOR') && types.has('MEMORY')) {
+      quality = 0.75; label = 'Kognitiv';
+    } else if (types.has('SOMA') && types.has('RELAY') && types.has('INHIBITOR')) {
+      quality = 0.6; label = 'Stabil';
+    } else if (types.has('SOMA') && types.has('RELAY')) {
+      quality = 0.35; label = 'Einfach';
+    }
+    const avgHeat = group.reduce((s,n)=>s+n.heat,0) / group.length;
+    quality *= Math.max(0.3, 1 - avgHeat * 0.8);
+    const cx = group.reduce((s,n)=>s+n.x,0)/group.length;
+    const cy = group.reduce((s,n)=>s+n.y,0)/group.length;
+    clusters.push({ nodes:group.map(n=>n.id), cx, cy, quality, label, size:group.length });
+  }
+  state.clusterQuality = clusters;
+}
+
+// ── Draw cluster quality overlays ─────────────────────────────────────────
+function drawClusterOverlays(now) {
+  if (!state.started || state.clusterQuality.length === 0) return;
+  if (cam.zoom < 0.3) return; // skip at far zoom
+  const t = now * 0.001;
+  for (const cl of state.clusterQuality) {
+    if (cl.size < 2 || cl.quality < 0.3) continue;
+    const s = w2s(cl.cx, cl.cy);
+    const radius = 38 * cam.zoom * Math.sqrt(cl.size) + 6;
+    const pulse = 0.7 + 0.3 * Math.sin(t * 0.6 + cl.cx * 0.01);
+
+    // Quality color: low=red, mid=yellow, high=green
+    let r = 0, g = 0, b = 0;
+    if (cl.quality < 0.5) { r = 255; g = Math.floor(cl.quality * 2 * 200); b = 0; }
+    else { r = Math.floor((1-cl.quality)*2*255); g = 200; b = 80; }
+
+    gctx.strokeStyle = `rgba(${r},${g},${b},${0.12 * pulse * cl.quality})`;
+    gctx.lineWidth   = 1.5 * cam.zoom;
+    gctx.setLineDash([8*cam.zoom, 6*cam.zoom]);
+    gctx.beginPath(); gctx.arc(s.x, s.y, radius, 0, Math.PI*2); gctx.stroke();
+    gctx.setLineDash([]);
+
+    // Label if quality is good
+    if (cl.quality > 0.55 && cam.zoom > 0.5) {
+      gctx.fillStyle = `rgba(${r},${g},${b},${0.6 * cl.quality})`;
+      gctx.font = `${Math.round(7*cam.zoom)}px 'Share Tech Mono',monospace`;
+      gctx.textAlign = 'center'; gctx.textBaseline = 'middle';
+      gctx.fillText(cl.label, s.x, s.y - radius - 6*cam.zoom);
+    }
+  }
+}
+
+// ── Draw Phase Lock visualization (concentric rings around OSCILLATORs) ───
+function drawPhaseLockVFX(now) {
+  if (state.phaseLock < 0.15) return;
+  const t = now * 0.001;
+  const oscNeurons = state.neurons.filter(n => n.type === 'OSCILLATOR');
+  if (oscNeurons.length < 2) return;
+
+  const alpha = state.phaseLock * 0.5;
+  // Draw sync arcs between OSCILLATORs
+  for (let i = 0; i < oscNeurons.length - 1; i++) {
+    const a = oscNeurons[i], b = oscNeurons[i+1];
+    const sa = w2s(a.x, a.y), sb = w2s(b.x, b.y);
+    const wave = 0.5 + 0.5 * Math.sin(t * (a.oscFreq + b.oscFreq) * Math.PI);
+    gctx.strokeStyle = `rgba(232,121,249,${alpha * wave * 0.5})`;
+    gctx.lineWidth   = 1.2 * cam.zoom;
+    gctx.setLineDash([4*cam.zoom, 8*cam.zoom]);
+    gctx.beginPath(); gctx.moveTo(sa.x, sa.y); gctx.lineTo(sb.x, sb.y); gctx.stroke();
+    gctx.setLineDash([]);
+  }
+
+  // Concentric expanding rings when phase lock is high
+  if (state.phaseLock > 0.5) {
+    for (const n of oscNeurons) {
+      const s = w2s(n.x, n.y);
+      const phase = (t * n.oscFreq) % 1;
+      const ringR = (phase * 60 + 20) * cam.zoom;
+      gctx.strokeStyle = `rgba(232,121,249,${(1-phase) * state.phaseLock * 0.3})`;
+      gctx.lineWidth = 1 * cam.zoom;
+      gctx.beginPath(); gctx.arc(s.x, s.y, ringR, 0, Math.PI*2); gctx.stroke();
+    }
+  }
+}
+
+// ── Draw Delta Mode overlay (slow cyan wash over entire screen) ────────────
+function drawDeltaModeOverlay(now) {
+  if (!state.deltaMode) return;
+  const t = now * 0.001;
+  const pulse = 0.3 + 0.15 * Math.sin(t * 0.4);  // very slow pulse
+  const grad = gctx.createRadialGradient(GW/2, GH/2, 0, GW/2, GH/2, Math.max(GW,GH)*0.7);
+  grad.addColorStop(0, `rgba(30,100,200,${pulse * 0.06})`);
+  grad.addColorStop(0.5, `rgba(0,60,150,${pulse * 0.04})`);
+  grad.addColorStop(1, `rgba(0,0,100,0)`);
+  gctx.fillStyle = grad;
+  gctx.fillRect(0, 0, GW, GH);
+}
+
+// ── Draw Consciousness approach overlay (Phi nears WIN_PHI) ──────────────
+function drawConsciousnessApproach(now) {
+  if (state.consciousnessApproach <= 0) return;
+  const t = now * 0.001;
+  const ca = state.consciousnessApproach;
+  const pulse = 0.5 + 0.5 * Math.sin(t * (1 + ca * 4));
+
+  // Golden screen edge glow
+  const edgeG = gctx.createRadialGradient(GW/2, GH/2, Math.min(GW,GH)*0.3, GW/2, GH/2, Math.min(GW,GH)*0.8);
+  edgeG.addColorStop(0, `rgba(251,191,36,0)`);
+  edgeG.addColorStop(0.7, `rgba(251,191,36,${ca * 0.04})`);
+  edgeG.addColorStop(1, `rgba(251,191,36,${ca * pulse * 0.12})`);
+  gctx.fillStyle = edgeG;
+  gctx.fillRect(0, 0, GW, GH);
+
+  // All neurons get extra gold pulse
+  if (ca > 0.5) {
+    for (const n of state.neurons) {
+      const s = w2s(n.x, n.y);
+      const r = C.NEURON_RADIUS * cam.zoom * (1.5 + ca * pulse);
+      const goldGrd = gctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r * 4);
+      goldGrd.addColorStop(0, `rgba(251,191,36,${ca * pulse * 0.15})`);
+      goldGrd.addColorStop(1, `rgba(251,191,36,0)`);
+      gctx.fillStyle = goldGrd;
+      gctx.beginPath(); gctx.arc(s.x, s.y, r * 4, 0, Math.PI*2); gctx.fill();
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+const titleCanvas = document.getElementById('title-canvas');
+const tctx = titleCanvas.getContext('2d');
+let titleNodes = [], titleLinks = [], titleRAF = null;
+
+function initTitleCanvas() {
+  titleCanvas.width  = window.innerWidth;
+  titleCanvas.height = window.innerHeight;
+  const W = titleCanvas.width, H = titleCanvas.height;
+  titleNodes = [];
+  for (let i = 0; i < 28; i++) {
+    titleNodes.push({
+      x:Math.random()*W, y:Math.random()*H,
+      r:3+Math.random()*5,
+      vx:(Math.random()-0.5)*0.3, vy:(Math.random()-0.5)*0.3,
+      phase:Math.random()*Math.PI*2, freq:0.4+Math.random()*0.8,
+      type:['SOMA','RELAY','INHIBITOR'][Math.floor(Math.random()*3)]
+    });
+  }
+  titleLinks = [];
+  for (let i=0; i<titleNodes.length; i++)
+    for (let j=i+1; j<titleNodes.length; j++) {
+      const d=Math.hypot(titleNodes[i].x-titleNodes[j].x, titleNodes[i].y-titleNodes[j].y);
+      if (d<200 && Math.random()<0.4) titleLinks.push({a:i,b:j,t:Math.random()});
+    }
+}
+
+function animateTitle(now) {
+  const W=titleCanvas.width, H=titleCanvas.height;
+  tctx.clearRect(0,0,W,H);
+
+  // FIX: Boundary bounce — nodes no longer drift off-screen
+  for (const n of titleNodes) {
+    n.x += n.vx; n.y += n.vy;
+    if (n.x < 0) { n.x = 0; n.vx = Math.abs(n.vx); }
+    else if (n.x > W) { n.x = W; n.vx = -Math.abs(n.vx); }
+    if (n.y < 0) { n.y = 0; n.vy = Math.abs(n.vy); }
+    else if (n.y > H) { n.y = H; n.vy = -Math.abs(n.vy); }
+  }
+
+  // Links with traveling signals
+  for (const lk of titleLinks) {
+    lk.t = (lk.t + 0.003) % 1;
+    const a=titleNodes[lk.a], b=titleNodes[lk.b];
+    tctx.strokeStyle='rgba(0,180,255,0.06)';
+    tctx.lineWidth=1;
+    tctx.beginPath(); tctx.moveTo(a.x,a.y); tctx.lineTo(b.x,b.y); tctx.stroke();
+    // Signal dot
+    const sx=lerp(a.x,b.x,lk.t), sy=lerp(a.y,b.y,lk.t);
+    tctx.fillStyle='rgba(0,212,255,0.4)';
+    tctx.beginPath(); tctx.arc(sx,sy,2,0,Math.PI*2); tctx.fill();
+  }
+
+  // Nodes
+  const t = now * 0.001;
+  for (const n of titleNodes) {
+    const p  = PAL[n.type];
+    const pulse = 0.5+0.5*Math.sin(t*n.freq+n.phase);
+    const glowA = 0.06+0.06*pulse;
+    // Glow
+    const grd = tctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r*4);
+    grd.addColorStop(0, colStr(p, glowA*2));
+    grd.addColorStop(1, colStr(p, 0));
+    tctx.fillStyle=grd;
+    tctx.beginPath(); tctx.arc(n.x,n.y,n.r*4,0,Math.PI*2); tctx.fill();
+    // Core
+    tctx.fillStyle=colStr(p, 0.35+0.2*pulse);
+    tctx.beginPath(); tctx.arc(n.x,n.y,n.r,0,Math.PI*2); tctx.fill();
+  }
+  titleRAF = requestAnimationFrame(animateTitle);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 9 — CAMERA & GAME CANVAS SETUP
+// ══════════════════════════════════════════════════════════════
+const gameCanvas = document.getElementById('game-canvas');
+const gctx = gameCanvas.getContext('2d');
+let GW = 0, GH = 0;
+
+const cam = { x:0, y:0, zoom:1 };
+
+function resizeGameCanvas() {
+  GW = gameCanvas.width  = window.innerWidth;
+  GH = gameCanvas.height = window.innerHeight;
+  // Keep camera centered on world origin
+  cam.x = GW/2; cam.y = GH/2;
+  // Also resize EEG canvas
+  const eegEl = document.getElementById('eeg-canvas');
+  const cont  = document.getElementById('eeg-container');
+  eegEl.width  = cont.offsetWidth;
+  eegEl.height = cont.offsetHeight;
+}
+
+// World ↔ screen transforms
+function w2s(wx, wy) {
+  return { x: cam.x + wx*cam.zoom, y: cam.y + wy*cam.zoom };
+}
+function s2w(sx, sy) {
+  return { x: (sx-cam.x)/cam.zoom, y: (sy-cam.y)/cam.zoom };
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 10 — INTRO STATE MACHINE (3-Act GDD Intro)
+// ══════════════════════════════════════════════════════════════
+
+// Narration lines keyed by [phase, time]
+const INTRO_NAR = [
+  {phase:0, t:4,  text:'Stille.'},
+  {phase:0, t:9,  text:'Dann: eine Ladung. Ein Impuls.'},
+  {phase:0, t:15, text:'Eine Richtung.'},
+  {phase:1, t:22, text:'Ein Kern. Aus dem Nichts.'},
+  {phase:2, t:38, text:'Das Feld ist leer. Wartend.'},
+  {phase:2, t:48, text:'Ein Netz braucht Verbindungen.'},
+  {phase:3, t:60, text:'Möglichkeiten...'},
+  {phase:4, t:80, text:'Das Netz erwacht. Jetzt liegt es an dir.'}
+];
+
+function tickIntro(dt) {
+  intro.time += dt;
+  const t = intro.time;
+  const I = C.INTRO;
+
+  // Phase transitions
+  if (intro.phase === 0 && t >= I.SILENCE_END) {
+    intro.phase = 1;
+    // Place SOMA at world origin — it persists into the game
+    const n = makeNeuron('SOMA', 0, 0);
+    state.neurons.push(n);
+    intro.somaId = n.id;
+  }
+  if (intro.phase === 1) {
+    intro.somaProgress = clamp((t - I.SILENCE_END) / (I.SOMA_END - I.SILENCE_END), 0, 1);
+    if (t >= I.SOMA_END) intro.phase = 2;
+  }
+  if (intro.phase === 2 && t >= I.FIELD_END) {
+    intro.phase = 3;
+    intro.skipReady = true;
+  }
+  if (intro.phase === 3 && t >= I.GHOST_END) {
+    intro.phase = 4;
+    intro.canTap = true;
+    document.getElementById('tap-to-begin').classList.add('visible');
+  }
+
+  // Ghost neurons fade in / out
+  if (intro.phase === 3) {
+    const gAge = t - I.FIELD_END;
+    const fadeTime = 5;
+    const holdTime = (I.GHOST_END - I.FIELD_END) - fadeTime*2;
+    for (const g of intro.ghosts) {
+      if (gAge < fadeTime)               g.alpha = clamp(gAge/fadeTime, 0, 1);
+      else if (gAge < fadeTime+holdTime) g.alpha = 1;
+      else g.alpha = clamp(1-(gAge-fadeTime-holdTime)/fadeTime, 0, 1);
+    }
+  } else if (intro.phase !== 3) {
+    for (const g of intro.ghosts) g.alpha = 0;
+  }
+
+  // Show narration lines at the right times
+  for (const line of INTRO_NAR) {
+    const key = `${line.phase}-${line.t}`;
+    if (!intro.shownNarLines.has(key) && intro.phase >= line.phase && t >= line.t) {
+      intro.shownNarLines.add(key);
+      showIntroLine(line.text);
+    }
+  }
+
+  // Fast-tick the SOMA so it animates during intro
+  tickFast(dt);
+}
+
+function showIntroLine(text) {
+  const el = document.createElement('div');
+  el.className = 'intro-line';
+  el.textContent = text;
+  const container = document.getElementById('intro-narration');
+  container.appendChild(el);
+  // Fade out and remove after 3.5s
+  setTimeout(()=>{
+    el.style.transition = 'opacity 0.8s';
+    el.style.opacity = '0';
+    setTimeout(()=>el.remove(), 850);
+  }, 3500);
+}
+
+function skipIntro() {
+  if (!intro.skipReady) return;
+  // Jump to decision phase
+  intro.phase  = 4;
+  intro.canTap = true;
+  intro.time   = C.INTRO.DECISION_AT;
+  if (!intro.somaId) {
+    const n = makeNeuron('SOMA', 0, 0);
+    state.neurons.push(n);
+    intro.somaId = n.id;
+    intro.somaProgress = 1;
+  }
+  // Clear narration, show tap-to-begin
+  document.getElementById('intro-narration').innerHTML = '';
+  document.getElementById('tap-to-begin').classList.add('visible');
+}
+
+function completeIntro() {
+  // Transition from intro → game
+  document.getElementById('tap-to-begin').classList.remove('visible');
+  document.getElementById('skip-intro').classList.remove('visible');
+  document.getElementById('intro-narration').innerHTML = '';
+  // Remove cinematic letterbox bars
+  document.getElementById('intro-bars').classList.remove('active');
+  document.getElementById('hud-top').classList.add('visible');
+  document.getElementById('hud-bottom').classList.add('visible');
+  document.getElementById('narrator').classList.add('visible');
+  app.screen = 'game';
+  state.started = true;
+  startAutosave();
+  tutStep = 0; tutDone = false;
+  showTutStep(0);
+  setTimeout(()=>narrate('soma'), 400);
+  updateHUD();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 11 — RENDERER
+// ══════════════════════════════════════════════════════════════
+
+function drawBackground() {
+  gctx.fillStyle = '#020408';
+  gctx.fillRect(0, 0, GW, GH);
+
+  // Faint dot-grid aligned to world
+  const gridSize = 60 * cam.zoom;
+  const offX = cam.x % gridSize;
+  const offY = cam.y % gridSize;
+  const gridAlpha = clamp(cam.zoom * 0.08, 0.015, 0.09);
+  gctx.fillStyle = `rgba(0,180,255,${gridAlpha})`;
+  for (let x = offX; x < GW; x += gridSize)
+    for (let y = offY; y < GH; y += gridSize) {
+      gctx.beginPath();
+      gctx.arc(x, y, 1, 0, Math.PI*2);
+      gctx.fill();
+    }
+
+  // Subtle radial vignette-glow at world center
+  const c = w2s(0, 0);
+  const vigRad = Math.max(GW, GH) * 0.6;
+  const vig = gctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, vigRad);
+  vig.addColorStop(0, 'rgba(0,60,140,0.08)');
+  vig.addColorStop(1, 'rgba(0,0,0,0)');
+  gctx.fillStyle = vig;
+  gctx.fillRect(0, 0, GW, GH);
+}
+
+function drawSynapses(now) {
+  const t = now * 0.001;
+
+  for (const syn of state.synapses) {
+    const src = gn(syn.src), dst = gn(syn.dst);
+    if (!src || !dst) continue;
+    const s1 = w2s(src.x, src.y), s2 = w2s(dst.x, dst.y);
+    const p1 = PAL[src.type];
+
+    // Bezier control point (perpendicular offset)
+    const dx = s2.x - s1.x, dy = s2.y - s1.y;
+    const len = Math.hypot(dx, dy);
+    const bendStrength = Math.min(len * 0.22, 42 * cam.zoom);
+    const nx = -dy / len, ny = dx / len;  // normal
+    const cpx = (s1.x + s2.x) / 2 + nx * bendStrength;
+    const cpy = (s1.y + s2.y) / 2 + ny * bendStrength;
+
+    const lineAlpha = syn.myelinated ? 0.26 : 0.14;
+    const lineWidth = syn.myelinated ? 1.8*cam.zoom : 1.1*cam.zoom;
+    const weightBoost = Math.min(1.6, syn.weight || 1);
+    gctx.strokeStyle = colStr(p1, lineAlpha * weightBoost);
+    gctx.lineWidth   = Math.max(0.5, lineWidth * weightBoost);
+    gctx.beginPath();
+    gctx.moveTo(s1.x, s1.y);
+    gctx.quadraticCurveTo(cpx, cpy, s2.x, s2.y);
+    gctx.stroke();
+
+    // Direction arrowhead at ~65% along bezier
+    if (len > 30 && cam.zoom > 0.35) {
+      const at = 0.65;
+      const bx = lerp(lerp(s1.x,cpx,at), lerp(cpx,s2.x,at), at);
+      const by = lerp(lerp(s1.y,cpy,at), lerp(cpy,s2.y,at), at);
+      const bt1x = lerp(s1.x,cpx,at) * 0.01 + lerp(cpx,s2.x,at) * 0.99;  // tangent dir
+      const bt1y = lerp(s1.y,cpy,at) * 0.01 + lerp(cpy,s2.y,at) * 0.99;
+      const angle = Math.atan2(bt1y - by, bt1x - bx);
+      const hs = Math.max(4, 5.5*cam.zoom);
+      gctx.fillStyle = colStr(p1, syn.myelinated ? 0.5 : 0.3);
+      gctx.beginPath();
+      gctx.moveTo(bx + hs*Math.cos(angle), by + hs*Math.sin(angle));
+      gctx.lineTo(bx + hs*Math.cos(angle+2.4), by + hs*Math.sin(angle+2.4));
+      gctx.lineTo(bx + hs*Math.cos(angle-2.4), by + hs*Math.sin(angle-2.4));
+      gctx.closePath(); gctx.fill();
+    }
+
+    // Myelination shimmer dots along bezier
+    if (syn.myelinated && cam.zoom > 0.5) {
+      const nDash = Math.floor(len / 30);
+      for (let d = 1; d < nDash; d++) {
+        const tt = d / nDash;
+        const mx = lerp(lerp(s1.x,cpx,tt), lerp(cpx,s2.x,tt), tt);
+        const my = lerp(lerp(s1.y,cpy,tt), lerp(cpy,s2.y,tt), tt);
+        gctx.fillStyle = colStr(p1, 0.38);
+        gctx.beginPath(); gctx.arc(mx, my, 1.5*cam.zoom, 0, Math.PI*2); gctx.fill();
+      }
+    }
+
+    // Synapse weight glow for high-weight synapses
+    if ((syn.weight||1) > 1.4 && cam.zoom > 0.4) {
+      gctx.strokeStyle = colStr(p1, 0.12 * (syn.weight - 1));
+      gctx.lineWidth = 4 * cam.zoom * (syn.weight - 1);
+      gctx.beginPath();
+      gctx.moveTo(s1.x, s1.y);
+      gctx.quadraticCurveTo(cpx, cpy, s2.x, s2.y);
+      gctx.stroke();
+    }
+
+    // Connect-mode highlight
+    if (state.connectMode === syn.src) {
+      gctx.strokeStyle = colStr(PAL.RELAY, 0.55);
+      gctx.lineWidth = 1.8*cam.zoom;
+      gctx.beginPath();
+      gctx.moveTo(s1.x, s1.y);
+      gctx.quadraticCurveTo(cpx, cpy, s2.x, s2.y);
+      gctx.stroke();
+    }
+  }
+
+  // Connect mode — dashed line to cursor
+  if (state.connectMode) {
+    const src = gn(state.connectMode);
+    if (src) {
+      const s1 = w2s(src.x, src.y);
+      gctx.strokeStyle = 'rgba(0,255,157,0.4)';
+      gctx.lineWidth = 1.5;
+      gctx.setLineDash([6,5]);
+      gctx.beginPath(); gctx.moveTo(s1.x, s1.y); gctx.lineTo(mouse.sx, mouse.sy); gctx.stroke();
+      gctx.setLineDash([]);
+    }
+  }
+}
+
+function drawSignals() {
+  for (const sig of state.signals) {
+    const syn = gs(sig.synId); if (!syn) continue;
+    const src = gn(syn.src), dst = gn(syn.dst); if (!src || !dst) continue;
+    const ss = w2s(src.x, src.y), ds = w2s(dst.x, dst.y);
+    const dx = ds.x-ss.x, dy = ds.y-ss.y;
+    const len = Math.hypot(dx,dy);
+    const bend = Math.min(len*0.22, 42*cam.zoom);
+    const nx = -dy/Math.max(1,len), ny = dx/Math.max(1,len);
+    const cpx = (ss.x+ds.x)/2 + nx*bend;
+    const cpy = (ss.y+ds.y)/2 + ny*bend;
+    const tt = sig.t;
+    const sx = lerp(lerp(ss.x,cpx,tt), lerp(cpx,ds.x,tt), tt);
+    const sy = lerp(lerp(ss.y,cpy,tt), lerp(cpy,ds.y,tt), tt);
+    const p = PAL[sig.srcType] || PAL.SOMA;
+    const r = Math.max(2, 3.5*cam.zoom);
+    const grd = gctx.createRadialGradient(sx,sy,0,sx,sy,r*3.5);
+    grd.addColorStop(0, colStr(p,0.65));
+    grd.addColorStop(1, colStr(p,0));
+    gctx.fillStyle=grd;
+    gctx.beginPath(); gctx.arc(sx,sy,r*3.5,0,Math.PI*2); gctx.fill();
+    gctx.fillStyle=colStr(p,1.0);
+    gctx.beginPath(); gctx.arc(sx,sy,r,0,Math.PI*2); gctx.fill();
+  }
+}
+
+function drawGliaConnections(now) {
+  const t = now * 0.001;
+  for (const glia of state.neurons.filter(n=>n.type==='GLIA')) {
+    const sg = w2s(glia.x, glia.y);
+    for (const n of state.neurons) {
+      if (n.id === glia.id) continue;
+      const d = Math.hypot(n.x - glia.x, n.y - glia.y);
+      if (d > 100) continue;
+      const sn = w2s(n.x, n.y);
+      const strength = 1 - d / 100;
+      const pulse = 0.4 + 0.4 * Math.sin(t * 1.2 + glia.pulsePhase + n.pulsePhase);
+      gctx.strokeStyle = `rgba(255,215,80,${0.08 * strength * pulse})`;
+      gctx.lineWidth = 1.5 * cam.zoom * strength;
+      gctx.setLineDash([4*cam.zoom, 6*cam.zoom]);
+      gctx.beginPath(); gctx.moveTo(sg.x, sg.y); gctx.lineTo(sn.x, sn.y); gctx.stroke();
+      gctx.setLineDash([]);
+    }
+  }
+}
+
+function drawNeurons(now) {
+  const t = now * 0.001;
+
+  for (const n of state.neurons) {
+    const s  = w2s(n.x, n.y);
+    const p  = PAL[n.type];
+    const r  = C.NEURON_RADIUS * cam.zoom;
+    const pulse = 0.85 + 0.15*Math.sin(t*1.1 + n.pulsePhase);
+    const birthAge = state.time - n.birthTime;
+    const birthScale = birthAge < 0.5 ? easeOut(birthAge/0.5) : 1;
+    const rr = r * pulse * birthScale;
+
+    // Intro soma: scale with somaProgress
+    const isSomaBirth = (app.screen==='intro' && n.id===intro.somaId);
+    const drawR = isSomaBirth ? rr * intro.somaProgress : rr;
+    const drawAlpha = isSomaBirth ? intro.somaProgress : 1;
+
+    if (drawR < 1) continue;
+
+    // ── TYPE-SPECIFIC BACKGROUND AURAS ──────────────────────────
+
+    // GLIA: gold-amber healing aura (pulsing softly)
+    if (n.type === 'GLIA') {
+      const auraR  = drawR * (4.5 + 1.5 * pulse);
+      const gliaGrd = gctx.createRadialGradient(s.x, s.y, drawR, s.x, s.y, auraR);
+      const ap = 0.08 + 0.06 * pulse;
+      gliaGrd.addColorStop(0, `rgba(255,215,100,${ap * drawAlpha})`);
+      gliaGrd.addColorStop(0.5,`rgba(255,180,60,${ap*0.4 * drawAlpha})`);
+      gliaGrd.addColorStop(1, `rgba(255,160,0,0)`);
+      gctx.fillStyle = gliaGrd;
+      gctx.beginPath(); gctx.arc(s.x, s.y, auraR, 0, Math.PI*2); gctx.fill();
+    }
+
+    // OSCILLATOR: rotating phase-lock ring
+    if (n.type === 'OSCILLATOR') {
+      const ringR = drawR * (2.8 + 0.6*pulse);
+      const dashAngle = t * n.oscFreq * Math.PI * 2;
+      gctx.save();
+      gctx.translate(s.x, s.y);
+      gctx.rotate(dashAngle);
+      gctx.strokeStyle = `rgba(232,121,249,${0.35 * drawAlpha})`;
+      gctx.lineWidth = 1.2 * cam.zoom;
+      gctx.setLineDash([6 * cam.zoom, 5 * cam.zoom]);
+      gctx.beginPath(); gctx.arc(0, 0, ringR, 0, Math.PI*2); gctx.stroke();
+      gctx.setLineDash([]);
+      gctx.restore();
+    }
+
+    // MEMORY: engram glow when pattern loaded
+    if (n.type === 'MEMORY' && n.memPattern > 0.3) {
+      const mpAlpha = n.memPattern * 0.25 * drawAlpha;
+      const engGrd = gctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, drawR * 4);
+      engGrd.addColorStop(0, `rgba(99,102,241,${mpAlpha * 1.5})`);
+      engGrd.addColorStop(1, `rgba(99,102,241,0)`);
+      gctx.fillStyle = engGrd;
+      gctx.beginPath(); gctx.arc(s.x, s.y, drawR * 4, 0, Math.PI*2); gctx.fill();
+    }
+
+    // COORDINATOR: slow rotation of 4 satellite dots
+    if (n.type === 'COORDINATOR') {
+      const satR  = drawR * 2.2;
+      const satDotR = Math.max(1.5, 2.5 * cam.zoom);
+      for (let k = 0; k < 4; k++) {
+        const ang = t * 0.6 + k * Math.PI / 2;
+        const sx2 = s.x + Math.cos(ang) * satR;
+        const sy2 = s.y + Math.sin(ang) * satR;
+        gctx.fillStyle = `rgba(239,68,68,${0.55 * drawAlpha})`;
+        gctx.beginPath(); gctx.arc(sx2, sy2, satDotR, 0, Math.PI*2); gctx.fill();
+      }
+    }
+
+    // STABILIZER: shield arc
+    if (n.type === 'STABILIZER') {
+      gctx.strokeStyle = `rgba(52,211,153,${0.28 * pulse * drawAlpha})`;
+      gctx.lineWidth = 2.5 * cam.zoom;
+      gctx.beginPath();
+      gctx.arc(s.x, s.y, drawR * 2.4, -Math.PI * 0.7, Math.PI * 0.7);
+      gctx.stroke();
+      gctx.beginPath();
+      gctx.arc(s.x, s.y, drawR * 2.4, Math.PI * 0.3, Math.PI * 1.7);
+      gctx.stroke();
+    }
+
+    // AMPLIFIER: spiky energy burst lines
+    if (n.type === 'AMPLIFIER') {
+      const burstPulse = 0.5 + 0.5 * Math.sin(t * 3.5 + n.pulsePhase);
+      for (let k = 0; k < 6; k++) {
+        const ang = (k / 6) * Math.PI * 2 + t * 0.8;
+        const innerR = drawR * 1.2;
+        const outerR = drawR * (1.8 + burstPulse * 0.8);
+        gctx.strokeStyle = `rgba(251,113,33,${0.4 * burstPulse * drawAlpha})`;
+        gctx.lineWidth = 1 * cam.zoom;
+        gctx.beginPath();
+        gctx.moveTo(s.x + Math.cos(ang)*innerR, s.y + Math.sin(ang)*innerR);
+        gctx.lineTo(s.x + Math.cos(ang)*outerR, s.y + Math.sin(ang)*outerR);
+        gctx.stroke();
+      }
+    }
+
+    // ── STANDARD NEURON DRAW ────────────────────────────────────
+
+    // Outer glow
+    const glowR = drawR * 3.5;
+    const grd1 = gctx.createRadialGradient(s.x,s.y,drawR*0.5,s.x,s.y,glowR);
+    grd1.addColorStop(0, colStr(p, 0.14*drawAlpha));
+    grd1.addColorStop(1, colStr(p, 0));
+    gctx.fillStyle = grd1;
+    gctx.beginPath(); gctx.arc(s.x,s.y,glowR,0,Math.PI*2); gctx.fill();
+
+    // Heat ring (red tint overlay)
+    if (n.heat > 0.2) {
+      const heatAlpha = n.heat * 0.55 * drawAlpha;
+      gctx.strokeStyle = `rgba(255,80,30,${heatAlpha})`;
+      gctx.lineWidth = 2*cam.zoom;
+      gctx.beginPath(); gctx.arc(s.x,s.y,drawR+3*cam.zoom,0,Math.PI*2); gctx.stroke();
+      // Inner heat glow
+      if (n.heat > 0.5) {
+        const hg = gctx.createRadialGradient(s.x,s.y,0,s.x,s.y,drawR);
+        hg.addColorStop(0, `rgba(255,60,0,${(n.heat-0.5)*0.3*drawAlpha})`);
+        hg.addColorStop(1, `rgba(255,60,0,0)`);
+        gctx.fillStyle = hg;
+        gctx.beginPath(); gctx.arc(s.x,s.y,drawR,0,Math.PI*2); gctx.fill();
+      }
+    }
+
+    // Upgrade ring(s) for level > 1
+    for (let lv = 1; lv < n.level; lv++) {
+      gctx.strokeStyle = colStr(p, 0.3*drawAlpha);
+      gctx.lineWidth = 1*cam.zoom;
+      gctx.beginPath(); gctx.arc(s.x,s.y,drawR+5*lv*cam.zoom,0,Math.PI*2); gctx.stroke();
+    }
+
+    // Body gradient
+    const grd2 = gctx.createRadialGradient(s.x,s.y-drawR*0.2,drawR*0.1,s.x,s.y,drawR);
+    grd2.addColorStop(0, colStr(p, (0.7+0.3*pulse)*drawAlpha));
+    grd2.addColorStop(0.6,colStr(p, (0.35+0.15*pulse)*drawAlpha));
+    grd2.addColorStop(1, colStr(p, 0.08*drawAlpha));
+    gctx.fillStyle = grd2;
+    gctx.beginPath(); gctx.arc(s.x,s.y,drawR,0,Math.PI*2); gctx.fill();
+
+    // Rim
+    gctx.strokeStyle = colStr(p, (0.5+0.4*pulse)*drawAlpha);
+    gctx.lineWidth   = Math.max(0.5, 1.2*cam.zoom);
+    gctx.beginPath(); gctx.arc(s.x,s.y,drawR,0,Math.PI*2); gctx.stroke();
+
+    // Label
+    if (cam.zoom >= 0.6) {
+      gctx.fillStyle = `rgba(255,255,255,${0.75*drawAlpha})`;
+      gctx.font = `bold ${Math.round(7*cam.zoom)}px 'Share Tech Mono',monospace`;
+      gctx.textAlign = 'center'; gctx.textBaseline = 'middle';
+      gctx.fillText(LABELS[n.type]||n.type, s.x, s.y);
+      if (n.level > 1) {
+        gctx.fillStyle = colStr(p, 0.6*drawAlpha);
+        gctx.font = `${Math.round(6*cam.zoom)}px 'Share Tech Mono',monospace`;
+        gctx.fillText('L'+n.level, s.x, s.y+drawR+9*cam.zoom);
+      }
+    }
+
+    // Selection ring
+    if (state.selected === n.id) {
+      gctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      gctx.lineWidth = 1.5;
+      gctx.setLineDash([4,4]);
+      gctx.beginPath(); gctx.arc(s.x,s.y,drawR+8*cam.zoom,0,Math.PI*2); gctx.stroke();
+      gctx.setLineDash([]);
+    }
+  }
+}
+
+function drawIntroGhosts() {
+  if (intro.phase !== 3) return;
+  for (let i = 0; i < intro.ghosts.length; i++) {
+    const g = intro.ghosts[i];
+    if (g.alpha <= 0.01) continue;
+    const p = PAL[g.type];
+    const s = w2s(g.wx, g.wy);
+    const r = C.NEURON_RADIUS * cam.zoom * 0.9;
+
+    // Ghost glow
+    const grd = gctx.createRadialGradient(s.x,s.y,0,s.x,s.y,r*3);
+    grd.addColorStop(0, colStr(p, 0.15*g.alpha));
+    grd.addColorStop(1, colStr(p, 0));
+    gctx.fillStyle = grd;
+    gctx.beginPath(); gctx.arc(s.x,s.y,r*3,0,Math.PI*2); gctx.fill();
+
+    // Ghost body (dashed outline, very transparent)
+    gctx.strokeStyle = colStr(p, 0.3*g.alpha);
+    gctx.lineWidth = 1.2*cam.zoom;
+    gctx.setLineDash([4,4]);
+    gctx.beginPath(); gctx.arc(s.x,s.y,r,0,Math.PI*2); gctx.stroke();
+    gctx.setLineDash([]);
+
+    // Ghost connection line to SOMA
+    if (intro.somaId) {
+      const soma = gn(intro.somaId);
+      if (soma) {
+        const ss = w2s(soma.x, soma.y);
+        gctx.strokeStyle = colStr(p, 0.1*g.alpha);
+        gctx.lineWidth = 0.8*cam.zoom;
+        gctx.setLineDash([6,8]);
+        gctx.beginPath(); gctx.moveTo(ss.x,ss.y); gctx.lineTo(s.x,s.y); gctx.stroke();
+        gctx.setLineDash([]);
+      }
+    }
+  }
+}
+
+function drawIntroSilenceDot(now) {
+  if (intro.phase !== 0) return;
+  const t = intro.time;
+  const c = w2s(0, 0);
+  const pulseMag = Math.max(0, Math.sin(t * 1.8));
+  const r = 2 + 2*pulseMag;
+  const alpha = clamp(t/3, 0, 1);
+
+  // Just a tiny cyan dot
+  const grd = gctx.createRadialGradient(c.x,c.y,0,c.x,c.y,r*6);
+  grd.addColorStop(0, `rgba(0,212,255,${alpha*0.5})`);
+  grd.addColorStop(1, 'rgba(0,212,255,0)');
+  gctx.fillStyle = grd;
+  gctx.beginPath(); gctx.arc(c.x,c.y,r*6,0,Math.PI*2); gctx.fill();
+
+  gctx.fillStyle = `rgba(0,212,255,${alpha})`;
+  gctx.beginPath(); gctx.arc(c.x,c.y,r,0,Math.PI*2); gctx.fill();
+}
+
+function drawEEG() {
+  if (!state.started) return;
+  const eegEl = document.getElementById('eeg-canvas');
+  const ectx  = eegEl.getContext('2d');
+  const W = eegEl.width, H = eegEl.height;
+  if (!W || !H) return;
+  ectx.clearRect(0,0,W,H);
+  const hist = state.eegHistory;
+  if (hist.length < 4) return;
+  const t = state.time;
+  const coFactor = clamp(state.coherence*1.4, 0.15, 1.2);
+  ectx.strokeStyle='rgba(0,180,255,0.07)'; ectx.lineWidth=0.5;
+  ectx.beginPath(); ectx.moveTo(0,H/2); ectx.lineTo(W,H/2); ectx.stroke();
+  const bands=[
+    {fmul:0.5, r:0,g:212,b:255,amp:0.35,ph:0},
+    {fmul:1.2, r:99,g:102,b:241,amp:0.22,ph:1.2},
+    {fmul:2.8, r:0,g:255,b:157,amp:0.16,ph:2.8},
+  ];
+  for (const band of bands) {
+    ectx.strokeStyle=`rgba(${band.r},${band.g},${band.b},0.14)`; ectx.lineWidth=0.7;
+    ectx.beginPath();
+    for (let i=0;i<hist.length;i++) {
+      const x=(i/hist.length)*W;
+      const wave=Math.sin(t*band.fmul*Math.PI*2-(i/hist.length)*Math.PI*4+band.ph);
+      const y=H/2-hist[i]*band.amp*H*wave;
+      if(i===0)ectx.moveTo(x,y); else ectx.lineTo(x,y);
+    }
+    ectx.stroke();
+  }
+  ectx.strokeStyle=`rgba(0,212,255,${0.5+coFactor*0.3})`; ectx.lineWidth=1.2;
+  ectx.beginPath();
+  for (let i=0;i<hist.length;i++) {
+    const x=(i/hist.length)*W;
+    let comp=0;
+    for (const b of bands) comp+=Math.sin(t*b.fmul*Math.PI*2-(i/hist.length)*Math.PI*4+b.ph)*b.amp;
+    const y=H/2-hist[i]*comp*H*coFactor;
+    if(i===0)ectx.moveTo(x,y); else ectx.lineTo(x,y);
+  }
+  ectx.stroke();
+}
+
+function drawFrame(now) {
+  if (!GW) return;
+  gctx.clearRect(0,0,GW,GH);
+  drawBackground();
+  if (state.heatmapOn) drawHeatmapOverlay();
+  if (state.deltaMode) drawDeltaModeOverlay(now);
+  if (app.screen === 'intro') {
+    drawIntroSilenceDot(now);
+    drawIntroGhosts();
+  }
+  drawClusterOverlays(now);
+  drawPhaseLockVFX(now);
+  drawSynapses(now);
+  drawGliaConnections(now);
+  drawSignals();
+  drawNeurons(now);
+  drawShockwaves();
+  drawParticles();
+  drawConsciousnessApproach(now);
+  drawConnectQuality(now);
+  drawTutorialHighlights(now);
+  drawEEG();
+  drawMinimap();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 12 — MAIN LOOP
+// ══════════════════════════════════════════════════════════════
+let lastTime = 0, slowAccum = 0, mainRAF = null;
+
+function mainLoop(now) {
+  const dt = Math.min((now - lastTime)/1000, 0.1);
+  lastTime = now;
+
+  if (app.screen === 'intro') {
+    tickIntro(dt);
+    drawFrame(now);
+  } else if (app.screen === 'game') {
+    tickFast(dt);
+    tickParticles(dt);
+    slowAccum += dt;
+    if (slowAccum >= 1) { slowAccum -= 1; tickSlow(); }
+    drawFrame(now);
+  }
+
+  mainRAF = requestAnimationFrame(mainLoop);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 13 — INPUT
+// ══════════════════════════════════════════════════════════════
+const mouse = {sx:0, sy:0};
+let longPressTimer = null, touchStart = null, dragActive = false, panStart = null;
+let lastPinchDist = 0, lastPinchMid = null;
+
+function getPos(e) {
+  if (e.touches && e.touches.length>0) return {x:e.touches[0].clientX, y:e.touches[0].clientY};
+  return {x:e.clientX, y:e.clientY};
+}
+
+function onPointerDown(e) {
+  e.preventDefault();
+  const pos = getPos(e);
+  touchStart = pos; dragActive = false;
+  mouse.sx = pos.x; mouse.sy = pos.y;
+
+  if (document.getElementById('bottom-sheet').classList.contains('open')) return;
+
+  // Intro tap
+  if (app.screen === 'intro') {
+    if (intro.canTap) { completeIntro(); return; }
+    if (intro.skipReady) { skipIntro(); return; }
+    return;
+  }
+
+  const wp = s2w(pos.x, pos.y);
+  const hitN = getNeuronAt(wp.x, wp.y);
+
+  if (state.connectMode) {
+    if (hitN) connectNeurons(state.connectMode, hitN.id);
+    exitConnectMode();
+    return;
+  }
+
+  if (hitN) {
+    if (tutAllowsConnect()) {
+      longPressTimer = setTimeout(()=>{ if(!dragActive) enterConnectMode(hitN.id); }, C.LONGPRESS_MS);
+    } else {
+      // Silently absorb the tap — select will be handled in pointerUp
+    }
+    return;
+  }
+  panStart = {sx:pos.x, sy:pos.y, cx:cam.x, cy:cam.y};
+}
+
+function onPointerMove(e) {
+  e.preventDefault();
+  const pos = getPos(e);
+  mouse.sx = pos.x; mouse.sy = pos.y;
+
+  if (touchStart) {
+    const d = Math.hypot(pos.x-touchStart.x, pos.y-touchStart.y);
+    if (d > C.DRAG_THRESHOLD) {
+      dragActive = true;
+      if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer=null; }
+    }
+  }
+  if (dragActive && panStart && !state.connectMode) {
+    cam.x = panStart.cx + (pos.x-panStart.sx);
+    cam.y = panStart.cy + (pos.y-panStart.sy);
+  }
+}
+
+function onPointerUp(e) {
+  e.preventDefault();
+  if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer=null; }
+  if (dragActive) { dragActive=false; panStart=null; return; }
+  panStart = null;
+  const pos = touchStart || getPos(e);
+  touchStart = null;
+  if (state.connectMode) return;
+  const wp = s2w(pos.x, pos.y);
+  const hitN = getNeuronAt(wp.x, wp.y);
+  if (hitN) {
+    if (tutAllowsSelect()) {
+      selectNeuron(hitN);
+    } else if (!tutAllowsConnect()) {
+      showToast('Place a RELAY neuron first');
+    } else {
+      showToast('Long-press to connect neurons');
+    }
+    return;
+  }
+  if (document.getElementById('bottom-sheet').classList.contains('open')) { closeSheet(); return; }
+  showRadialMenu(pos.x, pos.y, wp.x, wp.y);
+}
+
+function onTouchStartMulti(e) {
+  if (e.touches.length === 2) {
+    const t0=e.touches[0], t1=e.touches[1];
+    lastPinchDist = Math.hypot(t0.clientX-t1.clientX, t0.clientY-t1.clientY);
+    lastPinchMid  = {x:(t0.clientX+t1.clientX)/2, y:(t0.clientY+t1.clientY)/2};
+    // Cancel any single-touch pan/longpress
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer=null; }
+    panStart = null; dragActive = false;
+  }
+}
+function onTouchMoveMulti(e) {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const t0=e.touches[0], t1=e.touches[1];
+    const dist = Math.hypot(t0.clientX-t1.clientX, t0.clientY-t1.clientY);
+    const mid  = {x:(t0.clientX+t1.clientX)/2, y:(t0.clientY+t1.clientY)/2};
+
+    if (lastPinchDist > 0) {
+      // Zoom around the pinch midpoint (world point stays fixed)
+      const factor  = dist / lastPinchDist;
+      const newZoom = clamp(cam.zoom * factor, C.ZOOM_MIN, C.ZOOM_MAX);
+      const wx = (mid.x - cam.x) / cam.zoom;
+      const wy = (mid.y - cam.y) / cam.zoom;
+      cam.zoom = newZoom;
+      cam.x = mid.x - wx * cam.zoom;
+      cam.y = mid.y - wy * cam.zoom;
+    }
+
+    // Two-finger pan (delta of midpoint)
+    if (lastPinchMid) {
+      cam.x += mid.x - lastPinchMid.x;
+      cam.y += mid.y - lastPinchMid.y;
+    }
+
+    lastPinchDist = dist;
+    lastPinchMid  = mid;
+  }
+}
+
+gameCanvas.addEventListener('mousedown',  onPointerDown);
+gameCanvas.addEventListener('mousemove',  onPointerMove);
+gameCanvas.addEventListener('mouseup',    onPointerUp);
+gameCanvas.addEventListener('touchstart', e=>{ onTouchStartMulti(e); if(e.touches.length===1)onPointerDown(e); },{passive:false});
+gameCanvas.addEventListener('touchmove',  e=>{ onTouchMoveMulti(e);  if(e.touches.length===1)onPointerMove(e); },{passive:false});
+gameCanvas.addEventListener('touchend',   e=>{ if(e.changedTouches.length===1)onPointerUp(e); },{passive:false});
+gameCanvas.addEventListener('wheel', e=>{ e.preventDefault(); cam.zoom=clamp(cam.zoom*(e.deltaY<0?1.1:0.9),C.ZOOM_MIN,C.ZOOM_MAX); },{passive:false});
+
+document.getElementById('skip-intro').addEventListener('click', skipIntro);
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 14 — RADIAL MENU
+// ══════════════════════════════════════════════════════════════
+let radialWPos = null;
+
+function showRadialMenu(sx, sy, wx, wy) {
+  if (app.screen !== 'game') return;
+  if (!tutDone && TUTORIAL_STEPS[tutStep]?.id === 'connect') {
+    showToast('Long-press a neuron to connect it');
+    return;
+  }
+  const menu = document.getElementById('radial-menu');
+  const back = document.getElementById('radial-backdrop');
+  menu.innerHTML = '';
+  radialWPos = {wx, wy};
+
+  // Inner ring: Tier 1-2 (8 types). Outer ring: Tier 3-5 (6 types)
+  const inner = ['SOMA','RELAY','INHIBITOR','HARVESTER','SENSOR','GLIA','STABILIZER','AMPLIFIER'];
+  const outer = ['OSCILLATOR','MEMORY','PLASTICITY','ATTENTION','COORDINATOR','RESEARCH'];
+  const icons  = {
+    SOMA:'●', RELAY:'◆', INHIBITOR:'⊖', HARVESTER:'⬡', SENSOR:'◈',
+    GLIA:'✦', STABILIZER:'⬟', AMPLIFIER:'⚡',
+    OSCILLATOR:'◎', MEMORY:'▣', PLASTICITY:'⟡', ATTENTION:'◉', COORDINATOR:'✶', RESEARCH:'∞'
+  };
+  const colors = {};
+  [...inner,...outer].forEach(t => colors[t] = PAL[t]?.hex || '#888');
+
+  const curStep      = !tutDone && TUTORIAL_STEPS[tutStep];
+  const allowedTypes = curStep ? curStep.tutAllowed : null;
+
+  function addBtn(type, bx, by) {
+    const tutLocked    = allowedTypes !== null && !allowedTypes.has(type);
+    const isTutTarget  = allowedTypes !== null && allowedTypes.has(type);
+    const gameLocked   = !isTutTarget && !unlocked(type);
+    const locked       = tutLocked || gameLocked;
+    const c            = C.COSTS[type];
+    const unaffordable = !canAfford(type) && !locked;
+
+    const btn = document.createElement('div');
+    btn.className = 'radial-btn' + (locked?' locked':'');
+    btn.style.left = bx+'px'; btn.style.top = by+'px';
+    if (isTutTarget) {
+      btn.style.borderColor = colors[type];
+      btn.style.boxShadow   = `0 0 16px ${colors[type]}55`;
+    } else {
+      btn.style.borderColor = locked ? 'rgba(255,255,255,0.05)' : colors[type]+'40';
+    }
+    const knLabel = (c.knowledge>0) ? `<div class="radial-cost" style="color:#a78bfa">${c.knowledge}KN</div>` : '';
+    btn.innerHTML = `<div class="radial-icon" style="color:${locked?'#333':colors[type]}">${icons[type]}</div><div class="radial-label" style="color:${locked?'#333':'inherit'}">${LABELS[type]||type}</div><div class="radial-cost" style="color:${unaffordable?'#f87171':'rgba(0,212,255,0.45)'}">${c.energy}µV</div>${knLabel}`;
+
+    if (!locked) {
+      const act = ()=>{ closeRadialMenu(); placeNeuron(type, wx, wy); };
+      btn.addEventListener('click', e=>{ e.stopPropagation(); act(); });
+      btn.addEventListener('touchend', e=>{ e.preventDefault(); e.stopPropagation(); act(); });
+    } else if (tutLocked) {
+      btn.addEventListener('click', e=>{ e.stopPropagation(); showToast('Follow the tutorial first'); });
+      btn.addEventListener('touchend', e=>{ e.preventDefault(); e.stopPropagation(); showToast('Follow the tutorial first'); });
+    } else if (gameLocked) {
+      btn.addEventListener('click', e=>{ e.stopPropagation(); showToast('Not unlocked yet'); });
+      btn.addEventListener('touchend', e=>{ e.preventDefault(); e.stopPropagation(); showToast('Not unlocked yet'); });
+    }
+    menu.appendChild(btn);
+  }
+
+  // Inner ring (r=78)
+  inner.forEach((type,i)=>{
+    const angle = -Math.PI/2 + (i/inner.length)*Math.PI*2;
+    addBtn(type, sx + Math.cos(angle)*78, sy + Math.sin(angle)*78);
+  });
+
+  // Outer ring (r=138) — only show if any unlocked
+  const anyOuter = outer.some(t => unlocked(t));
+  if (anyOuter) {
+    outer.forEach((type,i)=>{
+      const angle = -Math.PI/2 + (i/outer.length)*Math.PI*2;
+      addBtn(type, sx + Math.cos(angle)*138, sy + Math.sin(angle)*138);
+    });
+    // Outer ring label
+    const lbl = document.createElement('div');
+    lbl.style.cssText='position:absolute;font-family:var(--mono);font-size:7px;letter-spacing:2px;text-transform:uppercase;color:rgba(167,139,250,0.35);transform:translate(-50%,-50%);pointer-events:none;white-space:nowrap;';
+    lbl.style.left=(sx)+'px'; lbl.style.top=(sy-148)+'px';
+    lbl.textContent='Advanced Neurons';
+    menu.appendChild(lbl);
+  }
+
+  menu.classList.add('open');
+  back.style.display='block';
+  back.onclick = closeRadialMenu;
+}
+
+function closeRadialMenu() {
+  document.getElementById('radial-menu').classList.remove('open');
+  document.getElementById('radial-backdrop').style.display='none';
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 15 — CONNECT MODE
+// ══════════════════════════════════════════════════════════════
+function enterConnectMode(id) {
+  state.connectMode = id;
+  document.getElementById('connect-hint').textContent = 'Ein anderes Neuron antippen zum Verbinden · Leere Fläche zum Abbrechen';
+  document.getElementById('connect-hint').classList.add('visible');
+  gameCanvas.style.cursor = 'crosshair';
+  clearTimeout(state.connectTimer);
+  state.connectTimer = setTimeout(exitConnectMode, C.CONNECT_TIMEOUT);
+}
+function exitConnectMode() {
+  state.connectMode = null;
+  document.getElementById('connect-hint').classList.remove('visible');
+  gameCanvas.style.cursor = 'default';
+  clearTimeout(state.connectTimer);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 16 — NEURON SELECTION & BOTTOM SHEET
+// ══════════════════════════════════════════════════════════════
+function selectNeuron(n) { state.selected=n.id; openSheet(n); }
+
+function openSheet(n) {
+  const p = PAL[n.type]||PAL.SOMA;
+  document.getElementById('sheet-title').textContent = n.type;
+  document.getElementById('sheet-title').style.color = p.hex;
+  const typeClass = {
+    SOMA:'Excitatory', RELAY:'Excitatory', SENSOR:'Excitatory',
+    HARVESTER:'Excitatory', AMPLIFIER:'Excitatory',
+    OSCILLATOR:'Rhythmic', ATTENTION:'Selective', COORDINATOR:'Sync',
+    INHIBITOR:'Inhibitory', GLIA:'Support', STABILIZER:'Support',
+    MEMORY:'Adaptive', PLASTICITY:'Adaptive', RESEARCH:'Cognitive'
+  };
+  const lvlMax = n.level >= 5;
+  document.getElementById('sheet-sub').textContent =
+    `${typeClass[n.type]||'Excitatory'} · Level ${n.level}${lvlMax?' (max)':''}`;
+  document.getElementById('sheet-activity').textContent = n.activity.toFixed(2);
+  document.getElementById('sheet-heat').textContent = (n.heat*100).toFixed(0)+'%';
+  document.getElementById('sheet-level').textContent = n.level;
+
+  // Neuron-specific third stat
+  let extraLabel='Signals Out', extraVal=n.sigsFired;
+  if (n.type==='OSCILLATOR')  { extraLabel='Freq(Hz)'; extraVal=n.oscFreq.toFixed(2); }
+  if (n.type==='MEMORY')      { extraLabel='Pattern';  extraVal=(n.memPattern*100).toFixed(0)+'%'; }
+  if (n.type==='PLASTICITY')  {
+    const avgW = state.synapses.filter(s=>s.src===n.id||s.dst===n.id).reduce((a,s)=>a+(s.weight||1),0)||1;
+    extraLabel='Syn.Weight'; extraVal=avgW.toFixed(2);
+  }
+  document.getElementById('sheet-sigs').textContent = extraVal;
+  const sLabel = document.querySelector('#bottom-sheet .sheet-stat:nth-child(4) .sheet-stat-label');
+  if (sLabel) sLabel.textContent = extraLabel;
+
+  const upgBtn = document.getElementById('sheet-upgrade-btn');
+  if (lvlMax) {
+    upgBtn.textContent = 'Max Level (L5)'; upgBtn.disabled = true;
+  } else {
+    const costE  = C.UPGRADE_COSTS[n.level-1];
+    const costKN = C.UPGRADE_KN_COSTS[n.level-1] || 0;
+    const knStr  = costKN > 0 ? ` + ${costKN}KN` : '';
+    upgBtn.textContent = `L${n.level+1} (${costE}µV${knStr})`;
+    upgBtn.disabled = false;
+  }
+  document.getElementById('bottom-sheet').classList.add('open');
+  closeRadialMenu();
+}
+
+function closeSheet() {
+  state.selected = null;
+  document.getElementById('bottom-sheet').classList.remove('open');
+}
+
+document.getElementById('sheet-close-btn').addEventListener('click',closeSheet);
+document.getElementById('sheet-upgrade-btn').addEventListener('click',()=>{
+  const n=gn(state.selected); if(!n)return;
+  if (upgradeNeuron(n.id)) openSheet(gn(n.id));
+});
+document.getElementById('sheet-connect-btn').addEventListener('click',()=>{
+  const id=state.selected; closeSheet(); enterConnectMode(id);
+});
+document.getElementById('sheet-remove-btn').addEventListener('click',()=>{
+  const id=state.selected; closeSheet(); removeNeuron(id); showToast('Neuron removed');
+});
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 17 — HUD UPDATE
+// ══════════════════════════════════════════════════════════════
+function updateHUD() {
+  const e=state.energy, b=state.biomass, st=state.stability;
+  const eMax=300, bMax=120, kMax=100;
+
+  document.getElementById('hud-energy').textContent = e.toFixed(1);
+  document.getElementById('hud-energy').style.color = e<20?'#f87171':'#00d4ff';
+  document.getElementById('hud-energy-bar').style.width  = clamp(e/eMax*100,0,100)+'%';
+
+  document.getElementById('hud-biomass').textContent = b.toFixed(1);
+  document.getElementById('hud-biomass-bar').style.width = clamp(b/bMax*100,0,100)+'%';
+
+  document.getElementById('hud-stability').textContent = st.toFixed(0)+'%';
+  document.getElementById('hud-stability').style.color  = stabColor(st);
+  const stabBar = document.getElementById('hud-stab-bar');
+  stabBar.style.background = stabColor(st);
+  stabBar.style.width = st+'%';
+
+  // Knowledge (show once >0)
+  if (state.knowledge > 0) {
+    const knEl = document.getElementById('hud-kn-block');
+    if (knEl) {
+      knEl.style.display = 'flex';
+      document.getElementById('hud-kn').textContent = Math.floor(state.knowledge);
+      document.getElementById('hud-kn-bar').style.width = clamp(state.knowledge/kMax*100,0,100)+'%';
+    }
+  }
+
+  // Heat
+  document.getElementById('hud-heat').textContent = (state.heat*100).toFixed(0)+'%';
+  document.getElementById('hud-heat').style.color = state.heat>0.6?'#f87171':state.heat>0.35?'#fbbf24':'var(--heat)';
+
+  document.getElementById('hud-neurons').textContent  = state.neurons.length;
+  document.getElementById('hud-synapses').textContent = state.synapses.length;
+  document.getElementById('hud-ign').textContent      = state.ignitions;
+  document.getElementById('hud-sps').textContent      = state.signalsPerSec;
+
+  if (state.phi > 0) {
+    document.getElementById('hud-phi-block').style.display='flex';
+    document.getElementById('hud-phi').textContent = Math.floor(state.phi);
+    document.getElementById('hud-phi-bar').style.width = clamp(state.phi/C.WIN_PHI*100,0,100)+'%';
+  }
+
+  const phEl = document.getElementById('hud-phase');
+  phEl.children[0].textContent = 'Phase '+state.phase;
+  phEl.children[1].textContent = C.PHASE_NAMES[state.phase]||'';
+
+  // ── Coalition strength (show once synapses exist)
+  if (state.synapses.length >= 1) {
+    const coalEl = document.getElementById('hud-coalition');
+    if (coalEl) {
+      coalEl.style.display = 'flex';
+      const coalPct = Math.round(clamp(state.coherence, 0, 1) * 100);
+      document.getElementById('hud-coal-val').textContent = coalPct + '%';
+      document.getElementById('hud-coal-val').style.color =
+        coalPct > 60 ? '#00ff9d' : coalPct > 30 ? '#fbbf24' : 'var(--relay)';
+    }
+  }
+
+  // ── Ignition readiness (show once 3+ neurons)
+  if (state.neurons.length >= 3) {
+    const ignEl = document.getElementById('hud-ignready');
+    if (ignEl) {
+      ignEl.style.display = 'flex';
+      // Readiness = coherence towards 0.3 threshold
+      const readiness = clamp(state.coherence / 0.3, 0, 1);
+      const pct = Math.round(readiness * 100);
+      document.getElementById('hud-ign-pct').textContent = pct + '%';
+      const icon = document.getElementById('hud-ign-icon');
+      if (pct >= 100) {
+        icon.textContent = '⚡'; icon.style.color = '#fbbf24';
+        icon.style.textShadow = '0 0 8px #fbbf24';
+      } else {
+        icon.textContent = '⚡'; icon.style.color = `rgba(251,191,36,${0.3+readiness*0.7})`;
+        icon.style.textShadow = '';
+      }
+    }
+  }
+
+  // ── Dopamine (shown after first ignition)
+  if (state.ignitions > 0) {
+    const daVal = document.getElementById('hud-da-val');
+    if (daVal) daVal.textContent = Math.round(state.dopamine * 100) + '%';
+  }
+
+  // ── Phase Lock HUD (show once OSCILLATOR placed)
+  if (state.neurons.some(n => n.type === 'OSCILLATOR')) {
+    const plEl = document.getElementById('hud-phaselock');
+    if (plEl) {
+      plEl.style.display = 'flex';
+      const plVal = document.getElementById('hud-phaselock-val');
+      if (plVal) plVal.textContent = Math.round(state.phaseLock * 100) + '%';
+    }
+  }
+
+  // ── Delta Mode HUD (show once MEMORY placed)
+  if (state.neurons.some(n => n.type === 'MEMORY')) {
+    const dmEl = document.getElementById('hud-deltamode');
+    if (dmEl) {
+      dmEl.style.display = 'flex';
+      dmEl.style.borderColor = state.deltaMode ? 'rgba(30,144,255,0.5)' : 'rgba(30,100,200,0.2)';
+      const dmLbl = document.getElementById('hud-delta-label');
+      if (dmLbl) dmLbl.textContent = state.deltaMode ? 'AKTIV' : '—';
+    }
+  }
+
+  maybeShowResearchBtn?.();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 18 — NARRATOR
+// ══════════════════════════════════════════════════════════════
+let narQueue = [], narBusy = false;
+
+function narrate(key) {
+  if (!NARLINES[key]) return;
+  narQueue.push(NARLINES[key]);
+  if (!narBusy) drainNarrator();
+}
+
+function drainNarrator() {
+  if (!narQueue.length) { narBusy=false; return; }
+  narBusy = true;
+  const el = document.createElement('div');
+  el.className = 'nl';
+  el.textContent = narQueue.shift();
+  document.getElementById('narrator').appendChild(el);
+  setTimeout(()=>{
+    el.style.transition = 'opacity 0.5s';
+    el.style.opacity = '0';
+    setTimeout(()=>{ el.remove(); drainNarrator(); }, 520);
+  }, 3400);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 19 — TUTORIAL (v1.2)
+// ══════════════════════════════════════════════════════════════
+//
+// Tutorial flow (SOMA is already placed by the intro sequence):
+//   0  relay       → place RELAY
+//   1  connect     → connect SOMA → RELAY (first synapse)
+//   2  inhibitor   → place INHIBITOR near a hot node
+//   3  synapse_inh → connect any neuron → INHIBITOR
+//   4  harvester   → place HARVESTER for biomass
+//   5  ignition    → build to first ignition
+//   6  (done)      → auto-hide
+
+const TUTORIAL_STEPS = [
+  { id:'relay',
+    title:'RELAY platzieren',
+    trigger:'RELAY',
+    progress:1/9,
+    body:'Dein SOMA pulsiert — es erzeugt µV-Energie. Tippe auf eine leere Fläche um das Platzierungsmenü zu öffnen. Wähle RELAY — es verstärkt und leitet Signale weiter.',
+    hint:'Tippe auf leere Fläche → RELAY im Menü wählen',
+    allowConnect:false, allowSelect:false,
+    tutAllowed: new Set(['RELAY']) },
+
+  { id:'connect',
+    title:'SOMA → RELAY verbinden',
+    trigger:'synapse',
+    progress:2/9,
+    body:'Jetzt verbinde die beiden Neuronen. Halte das cyan SOMA lange gedrückt bis der Verbindungsmodus aktiviert wird. Dann tippe das RELAY als Ziel. Signale fließen in der Richtung die du zeichnest.',
+    hint:'SOMA lange drücken · loslassen · RELAY antippen',
+    allowConnect:true, allowSelect:false,
+    tutAllowed: null },
+
+  { id:'inhibitor',
+    title:'INHIBITOR gegen Hitze',
+    trigger:'INHIBITOR',
+    progress:3/9,
+    body:'Das Netz erhitzt sich. Ein INHIBITOR hemmt überaktive Neuronen und kühlt das Substrat. Platziere ihn nahe deinen anderen Neuronen — Nähe ist entscheidend.',
+    hint:'Leere Fläche antippen → INHIBITOR (lila) wählen',
+    allowConnect:true, allowSelect:true,
+    tutAllowed: new Set(['INHIBITOR']) },
+
+  { id:'link_inh',
+    title:'Signale → INHIBITOR leiten',
+    trigger:'synapse_inh',
+    progress:4/9,
+    body:'Der INHIBITOR braucht eingehende Signale um zu wirken. Verbinde RELAY → INHIBITOR. Er absorbiert Signale statt sie weiterzufeuern — das kühlt das Netz.',
+    hint:'RELAY lange drücken → INHIBITOR antippen → Kühlung aktiv',
+    allowConnect:true, allowSelect:true,
+    tutAllowed: null },
+
+  { id:'harvester',
+    title:'HARVESTER für Biomasse',
+    trigger:'HARVESTER',
+    progress:5/9,
+    body:'Biomasse erschöpft sich. Platziere einen HARVESTER und verbinde RELAY → HARVESTER. Er wandelt Signale in Biomasse um — die Wachstumsressource des Netzes.',
+    hint:'HARVESTER platzieren → RELAY → HARVESTER verbinden',
+    allowConnect:true, allowSelect:true,
+    tutAllowed: new Set(['HARVESTER','RELAY','SOMA','SENSOR']) },
+
+  { id:'grow',
+    title:'Koalition aufbauen',
+    trigger:'ignition',
+    progress:6/9,
+    body:'Jetzt: baue das Netz aus. Jede neue Synapse erhöht die Koalitionsstärke. Der ⚡-Balken zeigt deine Zündungs-Bereitschaft. Bei ausreichender Kohärenz feuern alle Neuronen synchron — das ist eine ZÜNDUNG.',
+    hint:'Mehr Neuronen + Synapsen = höhere Koalition = Zündung',
+    allowConnect:true, allowSelect:true,
+    tutAllowed: null },
+
+  { id:'defend',
+    title:'Defensive Architektur',
+    trigger:'GLIA',
+    progress:7/9,
+    body:'Das Netz wächst — und braucht Pflege. Platziere eine GLIA neben einem heißen Cluster. Sie erzeugt eine goldene Heilaura und kühlt benachbarte Neuronen passiv. Beobachte die Heatmap.',
+    hint:'GLIA platzieren → goldene Aura → Hitzeanzeige sinkt',
+    allowConnect:true, allowSelect:true,
+    tutAllowed: new Set(['GLIA','STABILIZER','RELAY','SOMA','INHIBITOR']) },
+
+  { id:'cognition',
+    title:'Kognition beginnt',
+    trigger:'OSCILLATOR',
+    progress:8/9,
+    body:'Phase Lock: Platziere einen OSCILLATOR nahe dem Netz. Er erzeugt rhythmische Aktivität und synchronisiert andere Neuronen. Das EEG-Panel zeigt Theta-Wellen. Folge mit einem MEMORY — er kodiert Aktivierungsmuster in Knowledge.',
+    hint:'OSCILLATOR → Phase Lock % steigt → MEMORY für Knowledge',
+    allowConnect:true, allowSelect:true,
+    tutAllowed: new Set(['OSCILLATOR','MEMORY','RELAY','SOMA','GLIA','HARVESTER']) },
+
+  { id:'autonomous',
+    title:'Das Netz denkt. Es ist deins.',
+    trigger:null,
+    progress:9/9,
+    body:'Das Tutorial endet. Dein Netz hat eine eigene Ökologie. Delta-Mode zeigt tiefe Synchronisation. COORDINATOR maximiert Koalitionen. RESEARCH öffnet Meta-Upgrades. Φ = 3000 ist das Ziel: Bewusstsein.',
+    hint:'Research-Baum für Upgrades · Φ → 3000 für Bewusstsein',
+    allowConnect:true, allowSelect:true,
+    tutAllowed: null }
+];
+
+let tutStep = 0, tutDone = false;
+
+// ── Interaction gates ─────────────────────────────────────────
+function tutAllowsConnect() {
+  if (tutDone) return true;
+  return TUTORIAL_STEPS[tutStep]?.allowConnect ?? true;
+}
+function tutAllowsSelect() {
+  if (tutDone) return true;
+  return TUTORIAL_STEPS[tutStep]?.allowSelect ?? true;
+}
+
+// ── Display ───────────────────────────────────────────────────
+// Neuron type per tutorial step (for color stripe)
+const TUT_NEURON_TYPE = ['RELAY','RELAY','INHIBITOR','INHIBITOR','HARVESTER','IGNITION','GLIA','OSCILLATOR','OSCILLATOR'];
+
+function updateTutDots(currentStep, totalSteps) {
+  const dotsEl = document.getElementById('tut-dots');
+  if (!dotsEl) return;
+  const dots = dotsEl.querySelectorAll('.tut-dot');
+  dots.forEach((dot, idx) => {
+    dot.classList.remove('done','active');
+    if (idx < currentStep) dot.classList.add('done');
+    else if (idx === currentStep) dot.classList.add('active');
+  });
+}
+
+function showTutStep(i) {
+  if (i >= TUTORIAL_STEPS.length) { hideTutorial(); tutDone = true; return; }
+  const step = TUTORIAL_STEPS[i];
+  document.getElementById('tut-step').textContent  = `Schritt ${i+1} von ${TUTORIAL_STEPS.length}`;
+  document.getElementById('tut-title').textContent = step.title;
+  document.getElementById('tut-body').textContent  = step.body;
+  document.getElementById('tut-bar').style.width   = (step.progress * 100) + '%';
+  const hintEl  = document.getElementById('tut-hint');
+  const hintTxt = document.getElementById('tut-hint-text');
+  if (step.hint) {
+    hintTxt.textContent = step.hint;
+    hintEl.style.display = 'flex';
+  } else {
+    hintEl.style.display = 'none';
+  }
+  // Update dot indicators
+  updateTutDots(i, TUTORIAL_STEPS.length);
+  // Update color stripe by neuron type
+  const panel = document.getElementById('tutorial-panel');
+  const neuronType = TUT_NEURON_TYPE[i] || 'SOMA';
+  panel.setAttribute('data-neuron', neuronType);
+  panel.classList.add('visible');
+}
+
+// ── Advance ───────────────────────────────────────────────────
+function advanceTutorial(trigger) {
+  if (tutDone) return;
+  const step = TUTORIAL_STEPS[tutStep];
+  if (!step || step.trigger !== trigger) return;
+
+  // Flash border green briefly on advance
+  const panel = document.getElementById('tutorial-panel');
+  panel.style.transition = 'border-left-color 0.1s ease';
+  panel.style.borderLeftColor = 'rgba(0,255,138,0.9)';
+  setTimeout(() => { panel.style.borderLeftColor = ''; panel.style.transition = ''; }, 700);
+
+  tutStep++;
+  if (tutStep >= TUTORIAL_STEPS.length) {
+    // All done
+    tutDone = true;
+    hideTutorial();
+  } else {
+    const nextStep = TUTORIAL_STEPS[tutStep];
+    showTutStep(tutStep);
+    // If next step has no trigger, auto-complete after 6s
+    if (nextStep.trigger === null) {
+      setTimeout(()=>{ tutDone = true; hideTutorial(); }, 6500);
+    }
+  }
+}
+
+function hideTutorial() {
+  document.getElementById('tutorial-panel').classList.remove('visible');
+}
+
+// ── Canvas highlights per step ────────────────────────────────
+function drawTutorialHighlights(now) {
+  if (tutDone || !state.started) return;
+  const step = TUTORIAL_STEPS[tutStep];
+  if (!step) return;
+  const t     = now * 0.001;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 2.8);
+
+  // Helper: pulsing halo around a screen-space point
+  function drawHalo(sx, sy, color, radius, dash=false) {
+    gctx.strokeStyle = color;
+    gctx.lineWidth   = 1.5;
+    if (dash) gctx.setLineDash([4,4]); else gctx.setLineDash([]);
+    gctx.beginPath(); gctx.arc(sx, sy, radius, 0, Math.PI*2); gctx.stroke();
+    gctx.setLineDash([]);
+  }
+
+  // Helper: draw a labeled guide arrow from world (wx1,wy1) to (wx2,wy2)
+  function drawGuideArrow(wx1,wy1, wx2,wy2, color, label) {
+    const s1 = w2s(wx1,wy1), s2 = w2s(wx2,wy2);
+    const dx = s2.x-s1.x, dy = s2.y-s1.y;
+    const len = Math.hypot(dx,dy);
+    if (len < 10) return;
+    const nx = dx/len, ny = dy/len;
+    const startX = s1.x + nx*22, startY = s1.y + ny*22;
+    const endX   = s2.x - nx*22, endY   = s2.y - ny*22;
+
+    gctx.strokeStyle = color;
+    gctx.lineWidth   = 1.5;
+    gctx.setLineDash([5,4]);
+    gctx.beginPath(); gctx.moveTo(startX,startY); gctx.lineTo(endX,endY); gctx.stroke();
+    gctx.setLineDash([]);
+
+    // Arrowhead
+    const headLen = 9;
+    const angle   = Math.atan2(endY-startY, endX-startX);
+    gctx.fillStyle = color;
+    gctx.beginPath();
+    gctx.moveTo(endX, endY);
+    gctx.lineTo(endX - headLen*Math.cos(angle-0.4), endY - headLen*Math.sin(angle-0.4));
+    gctx.lineTo(endX - headLen*Math.cos(angle+0.4), endY - headLen*Math.sin(angle+0.4));
+    gctx.closePath(); gctx.fill();
+
+    // Label at midpoint
+    if (label) {
+      const mx = (startX+endX)/2, my = (startY+endY)/2;
+      gctx.fillStyle   = color;
+      gctx.font        = `${Math.round(9*cam.zoom)}px 'Share Tech Mono',monospace`;
+      gctx.textAlign   = 'center';
+      gctx.textBaseline= 'bottom';
+      gctx.fillText(label, mx, my - 4);
+    }
+  }
+
+  // Step 0: highlight the empty substrate + dim all neurons (tap-to-open menu)
+  if (step.id === 'relay') {
+    gctx.strokeStyle = `rgba(0,255,157,${0.07+0.05*pulse})`;
+    gctx.lineWidth = 3;
+    gctx.strokeRect(6, 6, GW-12, GH-12);
+    for (const n of state.neurons) {
+      const s = w2s(n.x,n.y);
+      const r = (C.NEURON_RADIUS+10)*cam.zoom;
+      drawHalo(s.x,s.y, `rgba(184,212,240,${0.10+0.06*pulse})`, r, true);
+    }
+  }
+
+  // Step 1: pulse SOMA as source, show dashed arrow toward screen center as guide
+  if (step.id === 'connect') {
+    const somas  = state.neurons.filter(n=>n.type==='SOMA');
+    const relays = state.neurons.filter(n=>n.type==='RELAY');
+    for (const n of somas) {
+      const s = w2s(n.x,n.y);
+      const r = (C.NEURON_RADIUS+10+6*pulse)*cam.zoom;
+      drawHalo(s.x,s.y, `rgba(0,212,255,${0.35+0.25*pulse})`, r);
+    }
+    // Guide arrow SOMA → RELAY if both exist
+    if (somas.length && relays.length) {
+      drawGuideArrow(somas[0].x,somas[0].y, relays[0].x,relays[0].y,
+        `rgba(0,255,157,${0.5+0.3*pulse})`, 'signal →');
+    }
+  }
+
+  // Step 2: pulse hot neurons + empty border (place inhibitor)
+  if (step.id === 'inhibitor') {
+    for (const n of state.neurons.filter(n=>n.heat > 0.15)) {
+      const s = w2s(n.x,n.y);
+      const r = (C.NEURON_RADIUS+12+5*pulse)*cam.zoom;
+      drawHalo(s.x,s.y, `rgba(255,124,51,${0.25+0.2*pulse})`, r);
+    }
+    gctx.strokeStyle = `rgba(192,132,252,${0.06+0.04*pulse})`;
+    gctx.lineWidth=3; gctx.strokeRect(6,6,GW-12,GH-12);
+  }
+
+  // Step 3: guide arrow from RELAY/SOMA → INHIBITOR
+  if (step.id === 'link_inh') {
+    const inhs   = state.neurons.filter(n=>n.type==='INHIBITOR');
+    const relays = state.neurons.filter(n=>n.type==='RELAY');
+    const somas  = state.neurons.filter(n=>n.type==='SOMA');
+    const src    = relays[0] || somas[0];
+    if (src && inhs.length) {
+      for (const inh of inhs) {
+        const si = w2s(inh.x,inh.y);
+        const r  = (C.NEURON_RADIUS+12+6*pulse)*cam.zoom;
+        drawHalo(si.x,si.y, `rgba(192,132,252,${0.4+0.3*pulse})`, r);
+        drawGuideArrow(src.x,src.y, inh.x,inh.y,
+          `rgba(192,132,252,${0.55+0.3*pulse})`, 'cool →');
+      }
+    }
+  }
+
+  // Step 4: highlight HARVESTER in the menu — pulse substrate border in green
+  if (step.id === 'harvester') {
+    const harvesters = state.neurons.filter(n=>n.type==='HARVESTER');
+    const relays     = state.neurons.filter(n=>n.type==='RELAY');
+    if (!harvesters.length) {
+      gctx.strokeStyle = `rgba(74,222,128,${0.07+0.05*pulse})`;
+      gctx.lineWidth=3; gctx.strokeRect(6,6,GW-12,GH-12);
+    } else if (relays.length) {
+      drawGuideArrow(relays[0].x,relays[0].y, harvesters[0].x,harvesters[0].y,
+        `rgba(74,222,128,${0.55+0.3*pulse})`, 'biomass →');
+    }
+  }
+}
+
+// ── Connect-mode quality hints (drawn over neurons) ───────────
+function drawConnectQuality(now) {
+  if (!state.connectMode) return;
+  const src = gn(state.connectMode);
+  if (!src) return;
+  const t = now * 0.001;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3.5);
+
+  for (const n of state.neurons) {
+    if (n.id === state.connectMode) continue;
+    const s = w2s(n.x, n.y);
+    const r = (C.NEURON_RADIUS + 14) * cam.zoom;
+    const already = state.synapses.some(syn => syn.src===state.connectMode && syn.dst===n.id);
+
+    let color, label;
+    if (already) {
+      // already connected — dim red cross
+      color = `rgba(255,68,102,0.25)`; label = '✕';
+    } else if (n.type==='INHIBITOR' && src.heat > 0.2) {
+      // hot source → inhibitor = excellent
+      color = `rgba(0,255,157,${0.45+0.3*pulse})`; label = 'cool';
+    } else if (n.type==='INHIBITOR') {
+      // inhibitor — good for stability
+      color = `rgba(192,132,252,${0.35+0.2*pulse})`; label = 'stable';
+    } else if (src.type==='INHIBITOR') {
+      // inhibitor as source — weak, inhibitor doesn't fire
+      color = `rgba(255,124,51,0.25)`; label = '⚠ no signal';
+    } else {
+      // neutral valid target
+      color = `rgba(0,212,255,${0.25+0.15*pulse})`; label = '→';
+    }
+
+    gctx.strokeStyle = color;
+    gctx.lineWidth   = 1.5;
+    gctx.beginPath(); gctx.arc(s.x, s.y, r, 0, Math.PI*2); gctx.stroke();
+
+    if (label && cam.zoom >= 0.55) {
+      gctx.fillStyle    = color;
+      gctx.font         = `${Math.round(8*cam.zoom)}px 'Share Tech Mono',monospace`;
+      gctx.textAlign    = 'center';
+      gctx.textBaseline = 'top';
+      gctx.fillText(label, s.x, s.y + r + 3);
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 19b — LEXICON
+// ══════════════════════════════════════════════════════════════
+const LEXICON_DATA = [
+  { type:'SOMA', icon:'●', tier:'Tier 1', color:'#00d4ff',
+    desc:'The anchor of your network. Generates µV Energy passively every tick and on signal arrival. Always fires — never silent.',
+    rules:[
+      {cls:'good', icon:'→', text:'Connect SOMA → RELAY: core signal chain. Loops back on itself for rapid cycles.'},
+      {cls:'good', icon:'→', text:'Connect SOMA → INHIBITOR: SOMA heat is high — good cooling target early on.'},
+      {cls:'warn', icon:'↩', text:'SOMA as a destination is fine — received signals give +0.2µV bonus each.'},
+      {cls:'warn', icon:'⚡', text:'SOMA generates heat. If heat > 60% expect Stability drain.'}
+    ]},
+  { type:'RELAY', icon:'◆', tier:'Tier 1', color:'#00ff9d',
+    desc:'Signal router and amplifier. Every signal passing through triggers a re-fire to all outgoing synapses — signals multiply through RELAYs.',
+    rules:[
+      {cls:'good', icon:'→', text:'RELAY → SOMA or RELAY → RELAY: creates feedback loops. More loops = faster Coherence.'},
+      {cls:'good', icon:'→', text:'RELAY → INHIBITOR: route excess signal heat into cooling.'},
+      {cls:'good', icon:'→', text:'RELAY → HARVESTER: convert signal throughput into Biomass.'},
+      {cls:'warn', icon:'⚡', text:'High signal load raises RELAY heat. Watch the heat ring around the node.'}
+    ]},
+  { type:'INHIBITOR', icon:'⊖', tier:'Tier 1', color:'#c084fc',
+    desc:'Cooling and stabilization node. Absorbs incoming signals — reduces its own heat and nearby neuron heat. Does NOT re-fire received signals.',
+    rules:[
+      {cls:'good', icon:'←', text:'Any hot neuron → INHIBITOR: the signal is absorbed, heat drops. The connection is consumed, not routed.'},
+      {cls:'bad',  icon:'✕', text:'INHIBITOR → anything: INHIBITOR does not fire on its own. Connecting it as a source has no effect.'},
+      {cls:'warn', icon:'◉', text:'Place INHIBITOR physically close to hot neurons for passive proximity cooling bonus.'},
+      {cls:'good', icon:'↑', text:'Each INHIBITOR adds +0.12×Level Stability per tick — place early.'}
+    ]},
+  { type:'SENSOR', icon:'◈', tier:'Tier 1', color:'#fbbf24',
+    desc:'Detects network activity and converts it into µV Energy via Dopamine coupling. Gains Knowledge passively for unlocking advanced neurons.',
+    rules:[
+      {cls:'good', icon:'←', text:'RELAY → SENSOR: high signal rate into SENSOR maximizes Dopamine income.'},
+      {cls:'good', icon:'→', text:'SENSOR → SOMA: creates reward loop — Dopamine boosts Energy generation.'},
+      {cls:'warn', icon:'⚡', text:'SENSOR generates moderate heat. Pair with a nearby INHIBITOR.'}
+    ]},
+  { type:'HARVESTER', icon:'⬡', tier:'Tier 2', color:'#4ade80',
+    desc:'Biomass generator. Converts incoming signal energy and idle time into Biomass — the resource for placing new neurons.',
+    rules:[
+      {cls:'good', icon:'←', text:'RELAY → HARVESTER: high-throughput connection gives the most Biomass.'},
+      {cls:'good', icon:'→', text:'HARVESTER → SOMA: cycle signal back to energy source for continuous income.'},
+      {cls:'warn', icon:'⚡', text:'HARVESTER heat is low — safe to chain several RELAYs into one.'}
+    ]},
+  { type:'GLIA', icon:'✦', tier:'Tier 2', color:'#63b3ed',
+    desc:'Support tissue. Does not fire signals. Provides passive cooling to nearby neurons and stability per tick. Essential for large networks.',
+    rules:[
+      {cls:'good', icon:'◉', text:'Place GLIA in the center of hot clusters for maximum proximity cooling radius (100px).'},
+      {cls:'bad',  icon:'✕', text:'Do not connect GLIA as source — it never fires and wastes a synapse slot.'},
+      {cls:'good', icon:'↑', text:'GLIA → any node: can receive signals but won\'t re-fire. Useful as a cooling sink like INHIBITOR.'}
+    ]},
+  { type:'STABILIZER', icon:'⬟', tier:'Tier 2', color:'#34d399',
+    desc:'Prevents cascade collapse. Adds strong Stability per tick. Unlocks after your first Ignition — deploy before a second attempt.',
+    rules:[
+      {cls:'good', icon:'↑', text:'Place freely — STABILIZER works through passive stability generation, no connections required.'},
+      {cls:'warn', icon:'←', text:'Can receive signals from RELAY as a heat sink, but its main value is the passive stability bonus.'}
+    ]},
+  { type:'AMPLIFIER', icon:'⚡', tier:'Tier 2', color:'#fb7121',
+    desc:'Burst fire node. When triggered, sends 2 signals to every outgoing synapse. Dramatically increases Sig/s and Coherence — but generates extreme heat.',
+    rules:[
+      {cls:'good', icon:'←', text:'Any source → AMPLIFIER → RELAYs: creates signal avalanche. Use for fast Phi accumulation.'},
+      {cls:'bad',  icon:'🔥', text:'AMPLIFIER generates 3× more heat than RELAY. Always pair with nearby INHIBITOR or GLIA.'},
+      {cls:'warn', icon:'⚡', text:'Chain AMPLIFIER → INHIBITOR to dump excess heat from the burst cycles.'}
+    ]},
+  { type:'OSCILLATOR', icon:'◎', tier:'Tier 3', color:'#e879f9',
+    desc:'Rhythmic pacemaker. Fires at its own frequency (0.4–0.8 Hz) and nudges nearby neurons to synchronize with its rhythm — critical for coherence.',
+    rules:[
+      {cls:'good', icon:'→', text:'OSCILLATOR → RELAY loop: creates a self-reinforcing rhythm that raises Coherence fast.'},
+      {cls:'good', icon:'◉', text:'Place near other active neurons — proximity sync radius is 150px.'},
+      {cls:'warn', icon:'⚠', text:'Multiple OSCILLATORs at different frequencies can clash. Try to match by upgrading one.'}
+    ]},
+  { type:'MEMORY', icon:'▣', tier:'Tier 3', color:'#6366f1',
+    desc:'Encodes activation patterns. Each received signal increases its pattern store (0–100%). A full MEMORY node generates passive Knowledge and Stability.',
+    rules:[
+      {cls:'good', icon:'←', text:'High-frequency source → MEMORY: fills pattern store quickly.'},
+      {cls:'good', icon:'↑', text:'Pattern > 50% yields passive KN and Stability. Keep MEMORY well-fed.'},
+      {cls:'warn', icon:'⚠', text:'MEMORY does not fire on receipt — it is a sink node like INHIBITOR. Good for absorbing excess signals.'}
+    ]},
+  { type:'PLASTICITY', icon:'⟡', tier:'Tier 3', color:'#14b8a6',
+    desc:'Adaptive synapse modifier. Each incoming signal strengthens all connected synapses (weight up to 2.5×). Stronger synapses raise Coherence faster.',
+    rules:[
+      {cls:'good', icon:'←', text:'RELAY → PLASTICITY: the loop\'s synapse weight grows continuously.'},
+      {cls:'good', icon:'↑', text:'PLASTICITY → any node: its outgoing synapse weight also increases on arrival.'},
+      {cls:'warn', icon:'⚠', text:'PLASTICITY adds Stability passively (+0.04×Level/s). Place near unstable clusters.'}
+    ]},
+  { type:'ATTENTION', icon:'◉', tier:'Tier 4', color:'#facc15',
+    desc:'Selective amplification. Fires at 2.2s intervals and temporarily boosts signal travel speed on all its outgoing connections. Accelerates Phi accumulation.',
+    rules:[
+      {cls:'good', icon:'→', text:'ATTENTION → COORDINATOR: creates focused, high-speed synchronization bursts.'},
+      {cls:'good', icon:'→', text:'ATTENTION → AMPLIFIER: the burst chain becomes even more powerful.'},
+      {cls:'warn', icon:'⚠', text:'Generates moderate heat — keep an INHIBITOR nearby.'}
+    ]},
+  { type:'COORDINATOR', icon:'✶', tier:'Tier 4', color:'#ef4444',
+    desc:'Network synchronizer. Fires and nudges all neurons toward simultaneous firing — directly causes Ignitions and multiplies Phi accumulation by 1.12×Level.',
+    rules:[
+      {cls:'good', icon:'◉', text:'Place one COORDINATOR in the center of your network for maximum sync radius.'},
+      {cls:'good', icon:'→', text:'RELAY → COORDINATOR → back to the loop: creates reliable ignition cycles.'},
+      {cls:'bad',  icon:'🔥', text:'Heat rises fast if COORDINATOR fires too often. Pair with STABILIZER.'}
+    ]},
+  { type:'RESEARCH',   icon:'∞',  tier:'Tier 5', color:'#ffffff',
+    desc:'Apex cognitive node. Generates Knowledge at 0.22×Level/s passively and on every signal received. Requires COORDINATOR + 15 KN to place.',
+    rules:[
+      {cls:'good', icon:'←', text:'Any high-throughput source → RESEARCH: maximizes passive Knowledge income.'},
+      {cls:'good', icon:'↑', text:'Unlock the Research Tree with KN to gain permanent network-wide bonuses.'},
+      {cls:'warn', icon:'⚠', text:'Costs 5 KN to place — only deploy once Research Tree yields are worth it.'}
+    ]}
+];
+
+function buildLexicon() {
+  const container = document.getElementById('lex-cards');
+  container.innerHTML = '';
+  for (const d of LEXICON_DATA) {
+    const unlk = unlocked(d.type) || state.neurons.some(n=>n.type===d.type);
+    const card = document.createElement('div');
+    card.className = 'lex-card';
+    card.style.borderColor = unlk ? d.color+'99' : 'rgba(255,255,255,0.06)';
+    card.style.opacity = unlk ? '1' : '0.35';
+    card.innerHTML = `
+      <div class="lex-card-head">
+        <span class="lex-icon" style="color:${d.color}">${d.icon}</span>
+        <span class="lex-name" style="color:${d.color}">${d.type}</span>
+        <span class="lex-tier">${d.tier}${unlk?'':' · Locked'}</span>
+      </div>
+      <div class="lex-desc">${d.desc}</div>
+      <div class="lex-rules">${d.rules.map(r=>`
+        <div class="lex-rule ${r.cls}">
+          <span class="lex-rule-icon">${r.icon}</span>
+          <span>${r.text}</span>
+        </div>`).join('')}
+      </div>`;
+    container.appendChild(card);
+  }
+}
+
+function showLexicon() {
+  buildLexicon();
+  document.getElementById('lexicon-panel').classList.add('open');
+}
+function closeLexicon() {
+  document.getElementById('lexicon-panel').classList.remove('open');
+}
+
+document.getElementById('lexicon-btn').addEventListener('click', showLexicon);
+document.getElementById('lex-close-btn').addEventListener('click', closeLexicon);
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 20b — RESEARCH TREE
+// ══════════════════════════════════════════════════════════════
+const RESEARCH_TREE = [
+  { id:'fast_synapse',   name:'Fast Synapses',    cost:8,  icon:'◈', requires:null,
+    desc:'All signal travel speed +25%. Synapses myelinate 40% faster.',
+    effect: ()=>{ state.resEffects.synapseSpeedMult = 1.25; } },
+
+  { id:'heat_sink',      name:'Thermal Damping',  cost:12, icon:'❄', requires:null,
+    desc:'Passive heat decay rate ×1.6 across all neurons. Network runs cooler.',
+    effect: ()=>{ state.resEffects.heatDecayMult = 1.6; } },
+
+  { id:'energy_dense',   name:'Dense Encoding',   cost:15, icon:'⚡', requires:'fast_synapse',
+    desc:'Each signal arrival yields +0.35µV instead of +0.18µV.',
+    effect: ()=>{ state.resEffects.signalEnergyBonus = 0.35; } },
+
+  { id:'phi_resonance',  name:'Phi Resonance',    cost:20, icon:'Φ',  requires:'fast_synapse',
+    desc:'Phi accumulation rate ×1.3 when coherence > 0.5.',
+    effect: ()=>{ state.resEffects.phiResonance = true; } },
+
+  { id:'biomass_regen',  name:'Biomass Recycling',cost:18, icon:'⬡', requires:'heat_sink',
+    desc:'Removing a neuron returns 40% of its Biomass cost.',
+    effect: ()=>{ state.resEffects.biomassRecycle = 0.4; } },
+
+  { id:'coalition_sync', name:'Coalition Sync',   cost:25, icon:'✶', requires:'phi_resonance',
+    desc:'Largest coalition size grants ×1.8 Phi bonus (up from ×1.4).',
+    effect: ()=>{ state.resEffects.coalitionBonus = 1.8; } },
+
+  { id:'memory_depth',   name:'Deep Memory',      cost:30, icon:'▣', requires:'coalition_sync',
+    desc:'MEMORY neurons accumulate pattern 2× faster and store up to 200% pattern.',
+    effect: ()=>{ state.resEffects.memoryDepth = 2; } },
+
+  { id:'full_plasticity',name:'Synaptic Plasticity',cost:35,icon:'⟡',requires:'memory_depth',
+    desc:'Synapse weights can reach 4.0 (up from 2.5). PLASTICITY neurons strengthen faster.',
+    effect: ()=>{ state.resEffects.maxSynapseWeight = 4.0; } },
+];
+
+// Research state is part of global state — initialise here if missing
+if (!state.researched) state.researched = new Set();
+if (!state.resEffects) state.resEffects = {
+  synapseSpeedMult:   1.0,
+  heatDecayMult:      1.0,
+  signalEnergyBonus:  0.18,
+  phiResonance:       false,
+  biomassRecycle:     0.0,
+  coalitionBonus:     1.4,  // default matches existing code
+  memoryDepth:        1,
+  maxSynapseWeight:   2.5,
+};
+
+function applyResearchEffects() {
+  // Called once after loadGame to re-apply all researched nodes
+  for (const id of state.researched) {
+    const node = RESEARCH_TREE.find(n=>n.id===id);
+    if (node) node.effect();
+  }
+}
+
+function buildResearchPanel() {
+  const container = document.getElementById('research-nodes');
+  container.innerHTML = '';
+  document.getElementById('research-intro').textContent =
+    `Knowledge: ${Math.floor(state.knowledge)} KN  ·  Spend to unlock network-wide upgrades.`;
+
+  for (const node of RESEARCH_TREE) {
+    const done     = state.researched.has(node.id);
+    const reqDone  = !node.requires || state.researched.has(node.requires);
+    const locked   = !reqDone;
+    const canBuy   = !done && !locked && state.knowledge >= node.cost;
+
+    const row = document.createElement('div');
+    row.className = 'res-node' + (done?' researched':'') + (locked?' locked-res':'');
+
+    const reqNode  = node.requires ? RESEARCH_TREE.find(n=>n.id===node.requires) : null;
+    const reqLabel = locked ? `Requires: ${reqNode?.name||node.requires}` : '';
+
+    let btnHtml;
+    if (done)       btnHtml = `<button class="res-btn done" disabled>✓ Done</button>`;
+    else if (locked)btnHtml = `<button class="res-btn" disabled>${reqLabel}</button>`;
+    else            btnHtml = `<button class="res-btn" ${canBuy?'':'disabled'} data-id="${node.id}">${node.cost} KN</button>`;
+
+    row.innerHTML = `
+      <div class="res-icon-box" style="color:${done?'#a78bfa':'rgba(167,139,250,0.4)'}">${node.icon}</div>
+      <div class="res-info">
+        <div class="res-name">${node.name}</div>
+        <div class="res-desc">${node.desc}</div>
+      </div>
+      ${btnHtml}`;
+
+    const btn = row.querySelector('.res-btn[data-id]');
+    if (btn) {
+      btn.addEventListener('click', ()=>{
+        if (state.knowledge < node.cost) { showToast('Not enough Knowledge'); return; }
+        state.knowledge -= node.cost;
+        state.researched.add(node.id);
+        node.effect();
+        showToast(`✦ ${node.name} researched`);
+        buildResearchPanel(); // refresh
+      });
+    }
+    container.appendChild(row);
+  }
+}
+
+function showResearch() {
+  buildResearchPanel();
+  document.getElementById('research-panel').classList.add('open');
+}
+function closeResearch() {
+  document.getElementById('research-panel').classList.remove('open');
+}
+
+document.getElementById('research-btn').addEventListener('click', showResearch);
+document.getElementById('research-close-btn').addEventListener('click', closeResearch);
+
+// Heatmap toggle
+const heatmapBtn = document.getElementById('heatmap-btn');
+heatmapBtn.addEventListener('click', ()=>{
+  state.heatmapOn = !state.heatmapOn;
+  heatmapBtn.classList.toggle('active', state.heatmapOn);
+});
+
+// Show research button once player has any Knowledge
+function maybeShowResearchBtn() {
+  if (state.knowledge >= 5) {
+    document.getElementById('research-btn').style.display = '';
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 20 — TOAST
+// ══════════════════════════════════════════════════════════════
+let toastTimer=null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent=msg;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('visible'), 2200);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 21 — FX
+// ══════════════════════════════════════════════════════════════
+function doIgnitionFX() {
+  const flash = document.getElementById('ignition-flash');
+  flash.style.background = 'radial-gradient(ellipse at center, rgba(251,191,36,0.28), rgba(0,212,255,0.12) 50%, transparent 80%)';
+  flash.style.animation  = 'none';
+  flash.offsetHeight;
+  flash.style.animation  = 'ignFlash 1.6s ease forwards';
+  // Briefly make all neurons pulse gold in CSS
+  document.querySelectorAll('#game-canvas-layer').forEach(el => {
+    el.style.filter = 'brightness(1.18)';
+    setTimeout(()=> el.style.filter = '', 400);
+  });
+}
+
+function showPhaseOverlay(name) {
+  const po = document.getElementById('phase-overlay');
+  document.getElementById('po-name').textContent = name;
+  po.classList.remove('active');
+  po.offsetHeight;
+  po.classList.add('active');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 22 — TITLE → INTRO TRANSITION
+// ══════════════════════════════════════════════════════════════
+const INIT_LINES = [
+  'Substrat initialisiert...',
+  'Neuronales Gerüst online.',
+  'Kortikales Feld stabilisiert.',
+  'Erster Impuls bereit...'
+];
+
+function startFromTitle() {
+  initAudio();
+  cancelAnimationFrame(titleRAF);
+
+  const titleScreen = document.getElementById('title-screen');
+  const gameLayer   = document.getElementById('game-canvas-layer');
+
+  resizeGameCanvas();
+  window.addEventListener('resize', resizeGameCanvas);
+
+  titleScreen.classList.add('fade-out');
+  gameLayer.classList.add('visible');
+
+  // Brief init text before intro
+  let idx=0;
+  const overlay = document.getElementById('intro-narration');
+
+  function showLine() {
+    if (idx >= INIT_LINES.length) {
+      setTimeout(beginIntro, 400);
+      return;
+    }
+    const el = document.createElement('div');
+    el.className='intro-line'; el.textContent=INIT_LINES[idx];
+    overlay.appendChild(el);
+    setTimeout(()=>{ el.style.transition='opacity 0.6s'; el.style.opacity='0'; setTimeout(()=>el.remove(),650); }, 1200);
+    idx++;
+    setTimeout(showLine, 1300);
+  }
+  setTimeout(showLine, 500);
+}
+
+function beginIntro() {
+  setTimeout(()=>document.getElementById('title-screen').style.display='none', 500);
+  // Activate cinematic letterbox bars
+  document.getElementById('intro-bars').classList.add('active');
+  app.screen = 'intro';
+  intro.time = 0;
+  intro.phase = 0;
+  intro.shownNarLines.clear();
+  lastTime = performance.now();
+  mainRAF = requestAnimationFrame(mainLoop);
+  // Show skip button after 5s
+  setTimeout(()=>{ intro.skipReady=true; document.getElementById('skip-intro').classList.add('visible'); }, 5000);
+}
+
+document.getElementById('start-btn').addEventListener('click', startFromTitle);
+document.getElementById('start-btn').addEventListener('touchend', e=>{ e.preventDefault(); startFromTitle(); });
+
+// Resume button — only shown if a save exists
+function resumeFromTitle() {
+  initAudio();
+  cancelAnimationFrame(titleRAF);
+  if (!loadGame()) { startFromTitle(); return; }
+
+  const titleScreen = document.getElementById('title-screen');
+  const gameLayer   = document.getElementById('game-canvas-layer');
+  resizeGameCanvas();
+  window.addEventListener('resize', resizeGameCanvas);
+  titleScreen.classList.add('fade-out');
+  gameLayer.classList.add('visible');
+  setTimeout(()=>titleScreen.style.display='none', 1300);
+
+  document.getElementById('hud-top').classList.add('visible');
+  document.getElementById('hud-bottom').classList.add('visible');
+  document.getElementById('narrator').classList.add('visible');
+  app.screen = 'game';
+  lastTime = performance.now();
+  mainRAF = requestAnimationFrame(mainLoop);
+  startAutosave();
+  // Tutorial: show current step if not done yet
+  if (!tutDone) showTutStep(tutStep);
+  setTimeout(()=>narrate('loaded'), 600);
+  updateHUD();
+}
+
+const resumeBtn = document.getElementById('resume-btn');
+resumeBtn.addEventListener('click', resumeFromTitle);
+resumeBtn.addEventListener('touchend', e=>{ e.preventDefault(); resumeFromTitle(); });
+
+// Show Resume button if save data exists
+if (hasSave()) resumeBtn.style.display = 'block';
+
+
+// ══════════════════════════════════════════════════════════════
+//  SECTION 23 — INIT
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('resize', ()=>{ if(!state.started){ titleCanvas.width=window.innerWidth; titleCanvas.height=window.innerHeight; }});
+initTitleCanvas();
+titleRAF = requestAnimationFrame(animateTitle);
+
+})();
+</script>
+</body>
+</html>
